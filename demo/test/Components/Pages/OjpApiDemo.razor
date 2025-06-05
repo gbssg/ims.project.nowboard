@@ -1,0 +1,179 @@
+﻿@using System.Xml.Linq
+@page "/ojp-demo"
+@inject HttpClient Http
+
+<style>
+    /* CSS-Styles für die Darstellung */
+    .station {
+        color: black;
+        text-align: center;
+        border: solid;
+        border-width: 3px;
+        border-color: blueviolet;
+    }
+
+    .abfahrtszeiten {
+        text-align: center;
+    }
+
+    .list {
+        text-align: match-parent;
+        margin: auto;
+        width: fit-content;
+    }
+</style>
+
+<h2 style="padding-bottom:50px;">OJP API Demo</h2>
+
+<!-- Zeigt den Stationsnamen an, falls vorhanden -->
+@if (!string.IsNullOrEmpty(StationName))
+{
+    <h4 class="station">Station: @StationName</h4>
+}
+
+<!-- Zeigt die Liste der Abfahrtszeiten an, falls vorhanden -->
+@if (DepartureTimes?.Any() == true)
+{
+    <h4 class="abfahrtszeiten">Abfahrtszeiten:</h4>
+    <ul class="list">
+        @foreach (var t in DepartureTimes)
+        {
+            <li>@t</li>
+        }
+    </ul>
+}
+
+@code {
+    // Liste der Abfahrtszeiten als Strings
+    private List<string> DepartureTimes = new();
+
+    // Rohantwort der API (nur für Debugging oder Fehlerausgabe)
+    private string ApiResponse;
+
+    // Name der aktuellen Station
+    private string StationName;
+
+    // Wird beim Initialisieren der Komponente aufgerufen
+    protected override async Task OnInitializedAsync()
+    {
+        await CallOpenTransportApiAsync();
+    }
+    
+    // Ruft die OJP-API auf und verarbeitet die Antwort
+    private async Task CallOpenTransportApiAsync()
+    {
+        // XML-Request-Body für die OJP-API
+        var requestBody = @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
+  <OJPRequest>
+    <siri:ServiceRequest>
+      <siri:RequestTimestamp>2025-05-15T17:00:34.598Z</siri:RequestTimestamp>
+      <siri:RequestorRef>API-Demo</siri:RequestorRef>
+      <OJPStopEventRequest>
+        <siri:RequestTimestamp>2025-05-15T17:00:34.598Z</siri:RequestTimestamp>
+        <siri:MessageIdentifier>SER</siri:MessageIdentifier>
+        <Location>
+          <PlaceRef>
+            <StopPlaceRef>8574258</StopPlaceRef>
+            <Name>
+              <Text>Riethüsli</Text>
+            </Name>
+          </PlaceRef>
+          <!-- <DepArrTime>2025-05-15T17:00:34.598Z</DepArrTime> -->
+        </Location>
+        <Params>
+          <OperatorFilter>
+            <Exclude>false</Exclude>
+            <OperatorRef>11</OperatorRef>
+          </OperatorFilter>
+          <NumberOfResults>5</NumberOfResults>
+          <StopEventType>departure</StopEventType>
+          <IncludePreviousCalls>false</IncludePreviousCalls>
+          <IncludeOnwardCalls>true</IncludeOnwardCalls>
+          <UseRealtimeData>full</UseRealtimeData>
+        </Params>
+      </OJPStopEventRequest>
+    </siri:ServiceRequest>
+  </OJPRequest>
+</OJP>";
+
+        // Erstellen und Konfigurieren des HTTP-Requests
+        var request = new HttpRequestMessage(HttpMethod.Post, "ojp20")
+            {
+                Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/xml")
+            };
+
+        // Authorization-Header hinzufügen (hier: statischer Token)
+        request.Headers.Add("Authorization", "Bearer eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
+
+        try
+        {
+            // Senden des Requests an die API
+            var response = await Http.SendAsync(request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Antwort als String lesen
+                ApiResponse = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    // XML-Antwort parsen
+                    var doc = XDocument.Parse(ApiResponse);
+                    XNamespace ojp = "http://www.vdv.de/ojp";
+                    XNamespace siri = "http://www.siri.org.uk/siri";
+
+                    DepartureTimes.Clear();
+                    StationName = null;
+
+                    // Stationsnamen aus dem ersten StopEvent extrahieren
+                    var firstStopEvent = doc.Descendants(ojp + "StopEvent").FirstOrDefault();
+                    if (firstStopEvent != null)
+                    {
+                        var placeName = firstStopEvent
+                            .Descendants(ojp + "StopPointName")
+                            .Elements(ojp + "Text")
+                            .FirstOrDefault();
+
+                        if (placeName != null)
+                            StationName = placeName.Value;
+                    }
+
+                    // Alle Abfahrtszeiten auslesen und formatieren
+                    foreach (var stopEvent in doc.Descendants(ojp + "StopEvent"))
+                    {
+                        var time = stopEvent
+                            .Descendants(ojp + "ServiceDeparture")
+                            .Elements(ojp + "TimetabledTime")
+                            .FirstOrDefault();
+
+                        if (time != null)
+                        {
+                            if (DateTime.TryParse(time.Value, out var dt))
+                                DepartureTimes.Add(dt.ToString("dd.MM.yyyy HH:mm")); // Formatierte Zeit
+                            else
+                                DepartureTimes.Add(time.Value); // Fallback, falls das Parsen fehlschlägt
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Fehler beim Parsen der XML-Antwort
+                    DepartureTimes.Clear();
+                    DepartureTimes.Add("Fehler beim Parsen: " + ex.Message);
+                    StationName = null;
+                }
+            }
+            else
+            {
+                // Fehlerhafte HTTP-Antwort
+                ApiResponse = $"Fehler: {response.StatusCode}\n{await response.Content.ReadAsStringAsync()}";
+            }
+        }
+        catch (Exception ex)
+        {
+            // Fehler beim Senden des Requests oder bei der Verarbeitung
+            ApiResponse = $"Exception: {ex.Message}";
+        }
+    }
+}
