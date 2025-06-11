@@ -4,176 +4,60 @@
 
 <style>
     /* CSS-Styles für die Darstellung */
+    main {
+        background-color: #00157e;
+        color: white;
+    }
+
+    .content.px-4 {
+        display: flex;
+        flex-direction:column;
+    }
+
     .station {
-        color: black;
         text-align: center;
-        border: solid;
-        border-width: 3px;
-        border-color: blueviolet;
+        width: fit-content;
+        font-weight: bold;
+    }
+
+    .titel-abfahrt {
+        text-align: left;
+        width: fit-content;
     }
 
     .abfahrtszeiten {
-        text-align: center;
+        text-align: left;
+        list-style-type: none;
     }
 
-    .list {
-        text-align: match-parent;
-        margin: auto;
+    li {
         width: fit-content;
+    }
+
+    .clock {
+        width: 420px;
     }
 </style>
 
-<h2 style="padding-bottom:50px;">OJP API Demo</h2>
+<div class="=clock">
+<iframe src="https://free.timeanddate.com/clock/i9xawfha/n268/szw210/szh210/hoc000/hbw4/cf100/hgr0/fav0/fiv0/mqc000/mqs3/mql25/mqw6/mqd96/mhc000/mhs3/mhl20/mhw6/mhd96/mmc000/mms3/mml10/mmw2/mmd96/hhw16/hmw16/hmr4/hss3/hsl90" 
+frameborder="0" width="210" height="210"></iframe>
+</div>
 
-<!-- Zeigt den Stationsnamen an, falls vorhanden -->
-@if (!string.IsNullOrEmpty(StationName))
-{
-    <h4 class="station">Station: @StationName</h4>
-}
 
-<!-- Zeigt die Liste der Abfahrtszeiten an, falls vorhanden -->
-@if (DepartureTimes?.Any() == true)
-{
-    <h4 class="abfahrtszeiten">Abfahrtszeiten:</h4>
-    <ul class="list">
-        @foreach (var t in DepartureTimes)
-        {
-            <li>@t</li>
-        }
-    </ul>
-}
 
+<!-- Zeigt den Stationsnamen an -->
+<h2 class="station">@StationName</h2>
+
+<!-- Zeigt die Liste der Abfahrtszeiten an -->
+<h4 class="titel-abfahrt">Abfahrt</h4>
 @code {
-    // Liste der Abfahrtszeiten als Strings
-    private List<string> DepartureTimes = new();
-
-    // Rohantwort der API (nur für Debugging oder Fehlerausgabe)
-    private string ApiResponse;
-
-    // Name der aktuellen Station
-    private string StationName;
-
-    // Wird beim Initialisieren der Komponente aufgerufen
-    protected override async Task OnInitializedAsync()
+    string[] DepartureTimes = { "05.06.2025 10:00", "05.06.2025 10:05", "05.06.2025 10:10", "05.06.2025 10:15", "05.06.2025 10:20", "05.06.2025 10:25", "05.06.2025 10:30" };
+    string StationName = "St. Gallen, Riethüsli"; 
+}       
+<ul class="abfahrtszeiten">
+    @foreach (var t in DepartureTimes)
     {
-        await CallOpenTransportApiAsync();
+        <li>@t</li>
     }
-    
-    // Ruft die OJP-API auf und verarbeitet die Antwort
-    private async Task CallOpenTransportApiAsync()
-    {
-        // XML-Request-Body für die OJP-API
-        var requestBody = @"<?xml version=""1.0"" encoding=""UTF-8""?>
-<OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
-  <OJPRequest>
-    <siri:ServiceRequest>
-      <siri:RequestTimestamp>2025-05-15T17:00:34.598Z</siri:RequestTimestamp>
-      <siri:RequestorRef>API-Demo</siri:RequestorRef>
-      <OJPStopEventRequest>
-        <siri:RequestTimestamp>2025-05-15T17:00:34.598Z</siri:RequestTimestamp>
-        <siri:MessageIdentifier>SER</siri:MessageIdentifier>
-        <Location>
-          <PlaceRef>
-            <StopPlaceRef>8574258</StopPlaceRef>
-            <Name>
-              <Text>Riethüsli</Text>
-            </Name>
-          </PlaceRef>
-          <!-- <DepArrTime>2025-05-15T17:00:34.598Z</DepArrTime> -->
-        </Location>
-        <Params>
-          <OperatorFilter>
-            <Exclude>false</Exclude>
-            <OperatorRef>11</OperatorRef>
-          </OperatorFilter>
-          <NumberOfResults>5</NumberOfResults>
-          <StopEventType>departure</StopEventType>
-          <IncludePreviousCalls>false</IncludePreviousCalls>
-          <IncludeOnwardCalls>true</IncludeOnwardCalls>
-          <UseRealtimeData>full</UseRealtimeData>
-        </Params>
-      </OJPStopEventRequest>
-    </siri:ServiceRequest>
-  </OJPRequest>
-</OJP>";
-
-        // Erstellen und Konfigurieren des HTTP-Requests
-        var request = new HttpRequestMessage(HttpMethod.Post, "ojp20")
-            {
-                Content = new StringContent(requestBody, System.Text.Encoding.UTF8, "application/xml")
-            };
-
-        // Authorization-Header hinzufügen (hier: statischer Token)
-        request.Headers.Add("Authorization", "Bearer eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
-
-        try
-        {
-            // Senden des Requests an die API
-            var response = await Http.SendAsync(request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                // Antwort als String lesen
-                ApiResponse = await response.Content.ReadAsStringAsync();
-
-                try
-                {
-                    // XML-Antwort parsen
-                    var doc = XDocument.Parse(ApiResponse);
-                    XNamespace ojp = "http://www.vdv.de/ojp";
-                    XNamespace siri = "http://www.siri.org.uk/siri";
-
-                    DepartureTimes.Clear();
-                    StationName = null;
-
-                    // Stationsnamen aus dem ersten StopEvent extrahieren
-                    var firstStopEvent = doc.Descendants(ojp + "StopEvent").FirstOrDefault();
-                    if (firstStopEvent != null)
-                    {
-                        var placeName = firstStopEvent
-                            .Descendants(ojp + "StopPointName")
-                            .Elements(ojp + "Text")
-                            .FirstOrDefault();
-
-                        if (placeName != null)
-                            StationName = placeName.Value;
-                    }
-
-                    // Alle Abfahrtszeiten auslesen und formatieren
-                    foreach (var stopEvent in doc.Descendants(ojp + "StopEvent"))
-                    {
-                        var time = stopEvent
-                            .Descendants(ojp + "ServiceDeparture")
-                            .Elements(ojp + "TimetabledTime")
-                            .FirstOrDefault();
-
-                        if (time != null)
-                        {
-                            if (DateTime.TryParse(time.Value, out var dt))
-                                DepartureTimes.Add(dt.ToString("dd.MM.yyyy HH:mm")); // Formatierte Zeit
-                            else
-                                DepartureTimes.Add(time.Value); // Fallback, falls das Parsen fehlschlägt
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Fehler beim Parsen der XML-Antwort
-                    DepartureTimes.Clear();
-                    DepartureTimes.Add("Fehler beim Parsen: " + ex.Message);
-                    StationName = null;
-                }
-            }
-            else
-            {
-                // Fehlerhafte HTTP-Antwort
-                ApiResponse = $"Fehler: {response.StatusCode}\n{await response.Content.ReadAsStringAsync()}";
-            }
-        }
-        catch (Exception ex)
-        {
-            // Fehler beim Senden des Requests oder bei der Verarbeitung
-            ApiResponse = $"Exception: {ex.Message}";
-        }
-    }
-}
+</ul>
