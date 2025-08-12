@@ -7,66 +7,88 @@
 
 <style>
     main {
-        background-color: #00157e;
-        color: white;
-        height: 100vh;
-        padding: 20px;
-        box-sizing: border-box;
+    background-color: #00157e;
+    color: white;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
     }
 
     .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-top: 20px;
-        margin-bottom: 40px;
-        padding: 0;
-        font-size: 2em;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 20px;
+    margin-bottom: 40px;
+    padding: 0;
+    font-size: 2em;
     }
 
     .station-title {
-        font-size: 1.5em;
-        font-weight: bold;
+    font-size: 1.5em;
+    font-weight: bold;
     }
 
     .clock-embed {
-        width: 210px;
-        height: 210px;
-        border: none;
+    width: 210px;
+    height: 210px;
+    border: none;
     }
 
     .table {
-        margin-top: 20px;
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 1.4em;
+    margin-top: 20px;
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.4em;
     }
 
-        .table th,
-        .table td {
-            border-bottom: 2px solid white;
-            padding: 10px;
-            text-align: left;
-            color: white;
-        }
+    .table th,
+    .table td {
+    border-bottom: 2px solid white;
+    padding: 10px;
+    text-align: left;
+    color: white;
+    }
 
-        .table th {
-            font-weight: normal;
-        }
+    .table th {
+    font-weight: normal;
+    }
 
     .abfahrtzeit {
-        font-weight: bold;
+    font-weight: bold;
     }
 
     .hinweis {
-        color: #ccc;
+    color: #ccc;
     }
 </style>
-
+@*
 @code {
-    string StationName = "St. Gallen, Riethüsli";
+    private static async Task displaydepartures()
+    {
+        using var client = new HttpClient();
+        client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
 
-    class Departure
+        var requestData = RequestCreate();
+        var request = new StringContent(requestData, Encoding.UTF8, "application/xml");
+
+        var response = await client.PostAsync("", request);
+        var responseXML = await response.Content.ReadAsStringAsync();
+
+        var ojpReader = new XmlSerializer(typeof(Ojp));
+        var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
+
+        // Variables for saving the data needed
+        var estimatedTime = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1].StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
+        var timetabledTime = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1].StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
+        var linie = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1].StopEvent.Service.PublishedServiceName.Text.Value;
+        var hinweis = estimatedTime - timetabledTime;
+        var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value;
+    }
+
+    private List<Departure> Departures = new();
+    public class Departure
     {
         public string Linie { get; set; }
         public string Ziel { get; set; }
@@ -74,19 +96,49 @@
         public string Hinweis { get; set; }
     }
 
-    List<Departure> Departures = new List<Departure>
-    {
-        new Departure { Linie = "B5", Ziel = "St. Gallen, Bahnhof", Abfahrt = "18:15", Hinweis = "2'" },
-        new Departure { Linie = "S21", Ziel = "St. Gallen, Bahnhof", Abfahrt = "18:19", Hinweis = "" },
-        new Departure { Linie = "B5", Ziel = "St. Gallen, Bahnhof", Abfahrt = "18:25", Hinweis = "1'" },
-        new Departure { Linie = "B5", Ziel = "St. Gallen, Bahnhof", Abfahrt = "18:35", Hinweis = "" },
-    };
+        private static string RequestCreate()
+        {
+            return @"<?xml version=""1.0"" encoding=""UTF-8""?>
+<OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
+  <OJPRequest>
+    <siri:ServiceRequest>
+      <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
+      <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
+      <OJPStopEventRequest>
+        <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
+        <siri:MessageIdentifier>SER</siri:MessageIdentifier>
+        <Location>
+          <PlaceRef>
+            <StopPlaceRef>8574258</StopPlaceRef>
+            <StopPlaceRef>8506371</StopPlaceRef>
+            <Name>
+              <Text>St. Gallen, Riethuesli</Text>
+            </Name>
+          </PlaceRef>
+        </Location>
+        <Params>
+          <OperatorFilter>
+            <Exclude>false</Exclude>
+            <OperatorRef>11</OperatorRef>
+          </OperatorFilter>
+          <NumberOfResults>7</NumberOfResults>
+          <StopEventType>departure</StopEventType>
+          <IncludePreviousCalls>false</IncludePreviousCalls>
+          <IncludeOnwardCalls>false</IncludeOnwardCalls>
+          <UseRealtimeData>full</UseRealtimeData>
+        </Params>
+      </OJPStopEventRequest>
+    </siri:ServiceRequest>
+  </OJPRequest>
+</OJP>";
+        }
 }
+*@
 
 <main>
     <div class="header">
         <div>
-            <div class="station-title">@StationName</div>
+            <div class="station-title">St. Gallen, Riethüsli</div>
         </div>
         <iframe class="clock-embed" src="https://free.timeanddate.com/clock/i9xawfha/n268/szw210/szh210/hoc000/hbw4/cf100/hgr0/fav0/fiv0/mqc000/mqs3/mql25/mqw6/mqd96/mhc000/mhs3/mhl20/mhw6/mhd96/mmc000/mms3/mml10/mmw2/mmd96/hhw16/hmw16/hmr4/hss3/hsl90"></iframe>
     </div>
@@ -101,15 +153,30 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var dep in Departures)
-            {
                 <tr>
-                    <td>@dep.Linie </td>
-                    <td>@dep.Ziel</td>
-                    <td class="abfahrtzeit">@dep.Abfahrt</td>
-                    <td class="hinweis" style="text-align: match-parent;">@dep.Hinweis</td>
+                    <td>B5 </td>
+                    <td>St. Gallen, Bahnhof</td>
+                    <td class="abfahrtzeit">09:15</td>
+                    <td class="hinweis" style="text-align: match-parent;">1'</td>
                 </tr>
-            }
+            <tr>
+                <td>B5 </td>
+                <td>St. Gallen, Bahnhof</td>
+                <td class="abfahrtzeit">09:25</td>
+                <td class="hinweis" style="text-align: match-parent;">2'</td>
+            </tr>
+            <tr>
+                <td>B5 </td>
+                <td>St. Gallen, Bahnhof</td>
+                <td class="abfahrtzeit">09:35</td>
+                <td class="hinweis" style="text-align: match-parent;">1'</td>
+            </tr>
+            <tr>
+                <td>B5 </td>
+                <td>St. Gallen, Bahnhof</td>
+                <td class="abfahrtzeit">09:45</td>
+                <td class="hinweis" style="text-align: match-parent;"></td>
+            </tr>
         </tbody>
     </table>
     <p style="font-size: 12px">*Nur Beispieldaten*</p>

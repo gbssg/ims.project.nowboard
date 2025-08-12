@@ -1,27 +1,17 @@
-using NowBoard.Components;
-
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+// Add services
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+
+// Register HttpClient using factory pattern (recommended)
+builder.Services.AddHttpClient();
+
+// Named HttpClient for specific APIs
+builder.Services.AddHttpClient("ojpAPI", client =>
+{
+    client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
-
-app.UseHttpsRedirection();
-
-app.UseStaticFiles();
-app.UseAntiforgery();
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();

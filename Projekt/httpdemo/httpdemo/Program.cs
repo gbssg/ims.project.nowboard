@@ -1,4 +1,4 @@
-﻿using System.Net;
+﻿using System.Linq.Expressions;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Xml.Serialization;
@@ -10,75 +10,95 @@ namespace httpdemo
     {
         static async Task Main(string[] args)
         {
-            Console.WriteLine("NowBoard Demo \n");
+            Console.WriteLine("NowBoard Demo\n");
 
-
-            using (var client = new HttpClient())
+            while (true)
             {
-                client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
+                Console.Clear();
 
-                var requestData = RequestCreate();
-                var request = new StringContent(requestData, Encoding.UTF8, "application/xml");
-                
-                var response = await client.PostAsync("", request);
+                try
+                {
+                    await displaydepartures();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred: {ex.Message}");
+                }
 
-                var responseXML = await response.Content.ReadAsStringAsync();
-                // Console.WriteLine(responseXML);
+                Console.WriteLine("\nRefreshing in 1 min... (Press Ctrl+C to exit)");
+                await Task.Delay(60000);
+            }
+        }
 
-                File.WriteAllText(@"C:\temp\response.xml", responseXML);
+        private static async Task displaydepartures()
+        {
+            using var client = new HttpClient();
+            client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
 
-                var ojpReader = new XmlSerializer(typeof(Ojp));
-                var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
+            var requestData = RequestCreate();
+            var request = new StringContent(requestData, Encoding.UTF8, "application/xml");
 
-                var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value;
-                var estimatedtime = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[0].StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
-                var timetabledtime = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[0].StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
-                var hinweis = estimatedtime - timetabledtime;
-                var linie = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[0].StopEvent.Service.PublishedServiceName.Text.Value;
+            var response = await client.PostAsync("", request);
+            var responseXML = await response.Content.ReadAsStringAsync();
 
-                Console.WriteLine("Haltestelle: " + haltestelle);
-                Console.WriteLine("Abfahrt: " + timetabledtime);
-                Console.WriteLine("Hinweis: +" + hinweis.ToString());
-                Console.WriteLine("Linie: " + linie);
+            var ojpReader = new XmlSerializer(typeof(Ojp));
+            var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
 
-                Console.ReadKey();
+            var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value ?? "Unbekannt";
+
+            Console.WriteLine(" Haltestelle\t\t\tLinie\t\tAbfahrt\t\tHinweis");
+            Console.WriteLine("-------------------------------------------------------------------------");
+
+            foreach (var stopEvent in responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults)
+            {
+                var estimatedTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
+                var timetabledTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
+                var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
+                var hinweis = estimatedTime - timetabledTime;
+
+                if (linie == "180")
+                { }
+                else
+                {
+                    Console.WriteLine($" {haltestelle}\t\tB {linie}\t\t{timetabledTime:HH:mm:ss}\t{hinweis}");
+                }
             }
         }
 
         private static string RequestCreate()
         {
             return @"<?xml version=""1.0"" encoding=""UTF-8""?>
-  <OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
-    <OJPRequest>
-        <siri:ServiceRequest>
-            <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-            <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
-            <OJPStopEventRequest>
-                <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-                <siri:MessageIdentifier>SER</siri:MessageIdentifier>
-                <Location>
-                  <PlaceRef>
-                      <StopPlaceRef>8574258</StopPlaceRef>
-                      <Name>
-                          <Text>St. Gallen, Riethuesli</Text>
-                      </Name>
-                  </PlaceRef>
-                  <!-- <DepArrTime>2025-06-12T11:40:21.539Z</DepArrTime> -->
-              </Location>
-              <Params>
-                  <OperatorFilter>
-                      <Exclude>false</Exclude>
-                      <OperatorRef>11</OperatorRef>
-                  </OperatorFilter>
-                  <NumberOfResults>5</NumberOfResults>
-                  <StopEventType>departure</StopEventType>
-                  <IncludePreviousCalls>false</IncludePreviousCalls>
-                  <IncludeOnwardCalls>false</IncludeOnwardCalls>
-                  <UseRealtimeData>full</UseRealtimeData>
-              </Params>
-          </OJPStopEventRequest>
-      </siri:ServiceRequest>
+<OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
+  <OJPRequest>
+    <siri:ServiceRequest>
+      <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
+      <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
+      <OJPStopEventRequest>
+        <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
+        <siri:MessageIdentifier>SER</siri:MessageIdentifier>
+        <Location>
+          <PlaceRef>
+            <StopPlaceRef>8574258</StopPlaceRef>
+            <StopPlaceRef>8506371</StopPlaceRef>
+            <Name>
+              <Text>St. Gallen, Riethuesli</Text>
+            </Name>
+          </PlaceRef>
+        </Location>
+        <Params>
+          <OperatorFilter>
+            <Exclude>false</Exclude>
+            <OperatorRef>11</OperatorRef>
+          </OperatorFilter>
+          <NumberOfResults>7</NumberOfResults>
+          <StopEventType>departure</StopEventType>
+          <IncludePreviousCalls>false</IncludePreviousCalls>
+          <IncludeOnwardCalls>false</IncludeOnwardCalls>
+          <UseRealtimeData>full</UseRealtimeData>
+        </Params>
+      </OJPStopEventRequest>
+    </siri:ServiceRequest>
   </OJPRequest>
 </OJP>";
         }
