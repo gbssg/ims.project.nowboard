@@ -1,17 +1,13 @@
+using httpdemo.OjpModel;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-// Register HttpClient using factory pattern (recommended)
 builder.Services.AddHttpClient();
-
-// Named HttpClient for specific APIs
-builder.Services.AddHttpClient("ojpAPI", client =>
-{
-    client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
+builder.Services.AddScoped(sp =>
+    new HttpClient { BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20") });
 
 var app = builder.Build();

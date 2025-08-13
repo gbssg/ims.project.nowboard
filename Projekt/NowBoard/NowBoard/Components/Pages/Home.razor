@@ -1,9 +1,11 @@
 ﻿@page "/"
-@using System.Net;
+@using System.Linq.Expressions;
+@using System.Net.Http;
+@using System.Xml.Serialization;
 @using System.Net.Http.Headers;
 @using System.Text;
-@using System.Xml.Serialization;
 @using httpdemo.OjpModel;
+@inject HttpClient HttpClient
 
 <style>
     main {
@@ -62,7 +64,36 @@
     color: #ccc;
     }
 </style>
-@*
+
+<main>
+    <div class="header">
+        <div>
+            <div class="station-title">@datalist.haltestelle</div>
+        </div>
+        <iframe class="clock-embed" src="https://free.timeanddate.com/clock/i9xawfha/n268/szw210/szh210/hoc000/hbw4/cf100/hgr0/fav0/fiv0/mqc000/mqs3/mql25/mqw6/mqd96/mhc000/mhs3/mhl20/mhw6/mhd96/mmc000/mms3/mml10/mmw2/mmd96/hhw16/hmw16/hmr4/hss3/hsl90"></iframe>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Linie</th>
+                <th>Ziel</th>
+                <th>Abfahrt</th>
+                <th>Hinweis</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>@datalist.linie </td>
+                <td>St. Gallen, Bahnhof</td>
+                <td class="abfahrtzeit">@datalist.timetabledTime2.ToString("00:00")</td>
+                <td class="hinweis" style="text-align: match-parent;">+ @datalist.hinweis</td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="font-size: 12px">*Nur Beispieldaten*</p>
+</main>
+
 @code {
     private static async Task displaydepartures()
     {
@@ -79,26 +110,37 @@
         var ojpReader = new XmlSerializer(typeof(Ojp));
         var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
 
-        // Variables for saving the data needed
-        var estimatedTime = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1].StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
-        var timetabledTime = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1].StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
-        var linie = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1].StopEvent.Service.PublishedServiceName.Text.Value;
+        var stopEvent = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults[1];
+
+        var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value ?? "Unbekannt";
+        var estimatedTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
+        var timetabledTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
+
+        // timetabledTime 2 für die letztendliche Anzeige, weil es die Berechnung mit hinweis vereinfacht
+        var timetabledTime2 = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2).ToString("t");
+        var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
         var hinweis = estimatedTime - timetabledTime;
-        var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value;
     }
 
-    private List<Departure> Departures = new();
-    public class Departure
+    public class datalist
     {
-        public string Linie { get; set; }
-        public string Ziel { get; set; }
-        public string Abfahrt { get; set; }
-        public string Hinweis { get; set; }
+        public DateTime estimatedTime { get; set; }
+        public DateTime timetabledTime { get; set; }
+        public DateTime timetabledTime2 { get; set; }
+        public string hinweis { get; set; }
+        public string linie { get; set; }
+        public string haltestelle { get; set; }
+
+        public static void Main()
+        {
+            var dl = new datalist();
+            
+        }
     }
 
-        private static string RequestCreate()
-        {
-            return @"<?xml version=""1.0"" encoding=""UTF-8""?>
+    private static string RequestCreate()
+    {
+        return @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
   <OJPRequest>
     <siri:ServiceRequest>
@@ -131,53 +173,5 @@
     </siri:ServiceRequest>
   </OJPRequest>
 </OJP>";
-        }
+    }
 }
-*@
-
-<main>
-    <div class="header">
-        <div>
-            <div class="station-title">St. Gallen, Riethüsli</div>
-        </div>
-        <iframe class="clock-embed" src="https://free.timeanddate.com/clock/i9xawfha/n268/szw210/szh210/hoc000/hbw4/cf100/hgr0/fav0/fiv0/mqc000/mqs3/mql25/mqw6/mqd96/mhc000/mhs3/mhl20/mhw6/mhd96/mmc000/mms3/mml10/mmw2/mmd96/hhw16/hmw16/hmr4/hss3/hsl90"></iframe>
-    </div>
-
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Linie</th>
-                <th>Ziel</th>
-                <th>Abfahrt</th>
-                <th>Hinweis</th>
-            </tr>
-        </thead>
-        <tbody>
-                <tr>
-                    <td>B5 </td>
-                    <td>St. Gallen, Bahnhof</td>
-                    <td class="abfahrtzeit">09:15</td>
-                    <td class="hinweis" style="text-align: match-parent;">1'</td>
-                </tr>
-            <tr>
-                <td>B5 </td>
-                <td>St. Gallen, Bahnhof</td>
-                <td class="abfahrtzeit">09:25</td>
-                <td class="hinweis" style="text-align: match-parent;">2'</td>
-            </tr>
-            <tr>
-                <td>B5 </td>
-                <td>St. Gallen, Bahnhof</td>
-                <td class="abfahrtzeit">09:35</td>
-                <td class="hinweis" style="text-align: match-parent;">1'</td>
-            </tr>
-            <tr>
-                <td>B5 </td>
-                <td>St. Gallen, Bahnhof</td>
-                <td class="abfahrtzeit">09:45</td>
-                <td class="hinweis" style="text-align: match-parent;"></td>
-            </tr>
-        </tbody>
-    </table>
-    <p style="font-size: 12px">*Nur Beispieldaten*</p>
-</main>
