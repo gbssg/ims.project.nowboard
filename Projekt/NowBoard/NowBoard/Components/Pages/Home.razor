@@ -5,7 +5,7 @@
     @using System.Net.Http.Headers;
     @using System.Text;
     @using httpdemo.OjpModel;
-    @inject HttpClient HttpClient
+@inject HttpClient Http
 
 <style>
     main {
@@ -68,13 +68,10 @@
 <main>
     <div class="header">
         <div>
-            <div class="station-title">0</div>
+            <div class="station-title">@datalist.haltestelle</div>
         </div>
         <iframe class="clock-embed" src="https://free.timeanddate.com/clock/i9xawfha/n268/szw210/szh210/hoc000/hbw4/cf100/hgr0/fav0/fiv0/mqc000/mqs3/mql25/mqw6/mqd96/mhc000/mhs3/mhl20/mhw6/mhd96/mmc000/mms3/mml10/mmw2/mmd96/hhw16/hmw16/hmr4/hss3/hsl90"></iframe>
     </div>
-
-    @if (displaydepartures != null)
-    {
         <table class="table">
             <thead>
                 <tr>
@@ -86,29 +83,23 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>0 </td>
+                    <td>@datalist.linie </td>
                     <td>St. Gallen, Bahnhof</td>
-                    <td class="abfahrtzeit">0</td>
-                    <td class="hinweis" style="text-align: match-parent;">+ 0</td>
+                    <td class="abfahrtzeit">@datalist.timetabledTime2</td>
+                    <td class="hinweis" style="text-align: match-parent;">+ @datalist.hinweis</td>
                 </tr>
             </tbody>
         </table>
         <p style="font-size: 12px">*Nur Beispieldaten*</p>
-    }
-
-    else
-    {
-        <p>Loading data...</p>
-    }
 </main>
 
 @code {
-   /* private Datalist datalist;
+    private Datalist datalist;
 
     protected override async Task OnInitializedAsync()
     {
         await displaydepartures();
-     } */
+     }
 
     private static async Task displaydepartures()
     {
@@ -137,7 +128,7 @@
         var hinweis = estimatedTime - timetabledTime;
             
         }
-        /*
+
     public class Datalist
     {
         public string estimatedTime { get; set; }
@@ -146,7 +137,7 @@
         public string hinweis { get; set; }
         public string linie { get; set; }
         public string haltestelle { get; set; }
-    } */
+    }
 
         private static string RequestCreate()
         {
