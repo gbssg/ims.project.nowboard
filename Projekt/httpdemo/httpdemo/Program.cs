@@ -58,9 +58,13 @@ namespace httpdemo
 
                 if (linie == "180")
                 { }
-                else
+                else if (linie == "5")
                 {
                     Console.WriteLine($" {haltestelle}\t\tB {linie}\t\t{timetabledTime:HH:mm:ss}\t{hinweis}");
+                }
+                else if (linie == "S21" || linie == "S22")
+                {
+                    Console.WriteLine($" {haltestelle}\t\t{linie}\t\t{timetabledTime:HH:mm:ss}\t{hinweis}");
                 }
             }
         }
@@ -78,8 +82,9 @@ namespace httpdemo
         <siri:MessageIdentifier>SER</siri:MessageIdentifier>
         <Location>
           <PlaceRef>
-            <StopPlaceRef>8574258</StopPlaceRef>
             <StopPlaceRef>8506371</StopPlaceRef>
+            <StopPlaceRef>8574258</StopPlaceRef>
+            
             <Name>
               <Text>St. Gallen, Riethuesli</Text>
             </Name>
