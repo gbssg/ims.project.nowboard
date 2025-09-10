@@ -26,6 +26,9 @@
       drawer.hourmark();
       drawer.minutemark();
 
+      // mittelpunkt
+      drawer.mittelpunkt();
+
       // aktuelle zeit holen
       const { hours, minutes, seconds } = getter.time();      
 

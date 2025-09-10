@@ -8,9 +8,10 @@ export class Draw {
     }
 
     hourmark() {
-      const { ctx, centerX, centerY, radius, innerradius } = this;
+      const { ctx, centerX, centerY, radius } = this;
         for (let i = 0; i < 12; i++) {
             const winkel = (i * Math.PI) / 6;
+            // abstand zwischen rand und markierungen
             const margin = 10;
             const x1 = centerX + (radius - 50) * Math.cos(winkel);
             const y1 = centerY + (radius - 50) * Math.sin(winkel);
@@ -31,6 +32,7 @@ export class Draw {
         const { ctx, centerX, centerY, radius, innerradius } = this;
         for (let i = 0; i < 60; i++) {
             const winkel = (i * Math.PI) / 30;
+            // abstand zwischen rand und markierungen
             const margin = 10;
             if (i % 5 !== 0) {
                 const x1 = centerX + (radius - 25) * Math.cos(winkel);
@@ -93,7 +95,7 @@ export class Draw {
       ctx.strokeStyle = "#c33334";
       ctx.stroke();
 
-      // mittelpunkt
+      // roter mittelpunkt
       ctx.beginPath();
       ctx.arc(centerX, centerY, 5, 0, Math.PI * 2);
       ctx.fillStyle = "#c33334";
@@ -116,8 +118,18 @@ export class Draw {
       ctx.fill();
 
       ctx.strokeStyle = "silver";
-      ctx.lineWidth = 8;
+      ctx.lineWidth = 7;
       ctx.stroke();
+    }
+
+    mittelpunkt() {
+        const { ctx, centerX, centerY } = this;
+        // mittelpunkt
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 7, 0, Math.PI * 2);
+      ctx.fillStyle = "black";
+      ctx.fill();
+      ctx.closePath();
     }
 
     
