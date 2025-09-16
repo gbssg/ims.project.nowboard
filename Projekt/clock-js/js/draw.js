@@ -105,6 +105,9 @@ export class Draw {
       ctx.beginPath(); // roten kreis am ende des zeigers
       // Ende des zeigers wird gebraucht, sprich für x = centerX + secondHandLength * cos(secondwinkel)
       // und für y = centerY + secondHandLength * sin(secondwinkel)
+      ctx.beginPath();
+      ctx.moveTo(centerX + secondHandLength, centerY + secondHandLength);
+      ctx.lineTo()
 
       
     }
