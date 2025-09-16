@@ -66,6 +66,22 @@ export class Draw {
       ctx.stroke();
     }
 
+    // kleine verlängerung vom stundenzeiger
+    littlehourpointer(littlehourwinkel) {
+        const { ctx, centerX, centerY, radius } = this;
+        const littlehourHandLength = radius * 0.2;
+        // stundenzeiger zeichnen
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + littlehourHandLength * Math.cos(littlehourwinkel),
+        centerY + littlehourHandLength * Math.sin(littlehourwinkel)
+      );
+      ctx.lineWidth = 15;
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+    }
+
     minutepointer(minutewinkel) {
         const { ctx, centerX, centerY, radius } = this;
         const minuteHandLength = radius * 0.949;
@@ -81,9 +97,25 @@ export class Draw {
       ctx.stroke();
     }
 
+    // kleine verlängerung vom minutenzeiger
+    littleminutepointer(littleminutewinkel) {
+        const { ctx, centerX, centerY, radius } = this;
+        const littleminuteHandLength = radius * 0.3;
+        // minutenzeiger zeichnen
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + littleminuteHandLength * Math.cos(littleminutewinkel),
+        centerY + littleminuteHandLength * Math.sin(littleminutewinkel)
+      );
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+    }
+
     secondpointer(secondwinkel) {
         const { ctx, centerX, centerY, radius } = this;
-        const secondHandLength = radius * 0.6;
+        const secondHandLength = radius * 0.677;
         // sekundenzeiger zeichnen
         ctx.beginPath();
       ctx.moveTo(centerX, centerY);
@@ -91,7 +123,7 @@ export class Draw {
         centerX + secondHandLength * Math.cos(secondwinkel),
         centerY + secondHandLength * Math.sin(secondwinkel)
       );
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 4;
       ctx.strokeStyle = "#c33334";
       ctx.stroke();
 
@@ -102,14 +134,27 @@ export class Draw {
       ctx.fill();
       ctx.closePath();
 
-      ctx.beginPath(); // roten kreis am ende des zeigers
-      // Ende des zeigers wird gebraucht, sprich für x = centerX + secondHandLength * cos(secondwinkel)
-      // und für y = centerY + secondHandLength * sin(secondwinkel)
-      ctx.beginPath();
-      ctx.moveTo(centerX + secondHandLength, centerY + secondHandLength);
-      ctx.lineTo()
+      ctx.beginPath(); // roter kreis am ende des zeigers
+      ctx.arc(centerX + secondHandLength * Math.cos(secondwinkel), centerY + secondHandLength * Math.sin(secondwinkel), 13, 0, Math.PI * 2);
+      ctx.fillStyle="#c33334";
+      ctx.fill();      
+    }
 
-      
+    // Kleine verlängerung vom sekundenzeiger
+    littlesecondpointer(littlesecondwinkel) {
+        const { ctx, centerX, centerY, radius } = this;
+        const littlesecondHandLength = radius * 0.25;
+        // sekundenzeiger zeichnen
+        ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(
+        centerX + littlesecondHandLength * Math.cos(littlesecondwinkel) ,
+        centerY + littlesecondHandLength * Math.sin(littlesecondwinkel)
+
+      );
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = "#c33334";
+      ctx.stroke();
     }
 
     rand() {

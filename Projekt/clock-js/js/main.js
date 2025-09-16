@@ -33,24 +33,24 @@
       const { hours, minutes, seconds } = getter.time();      
 
       // winkel holen
-      const { hourwinkel, minutewinkel, secondwinkel } = getter.winkel();
-
-      // zeigerlängen holen
-      const { hourHandLength, minuteHandLength, secondHandLength } = getter.zeigerlängen();
+      const { hourwinkel, minutewinkel, secondwinkel, littlesecondwinkel, littleminutewinkel, littlehourwinkel } = getter.winkel();
 
       // stundenzeiger zeichnen
       drawer.hourpointer(hourwinkel);
+      drawer.littlehourpointer(littlehourwinkel);
 
       // minutenzeiger zeichnen
       drawer.minutepointer(minutewinkel);
+      drawer.littleminutepointer(littleminutewinkel);
 
       // sekundenzeiger zeichnen
       drawer.secondpointer(secondwinkel);
+      drawer.littlesecondpointer(littlesecondwinkel);      
     }
-
-    drawClock();
-    setInterval(drawClock, 1000); // jede sekunde aktualisieren
 
     ctx.translate(centerX, centerY); // ursprung zum zentrum setzen
     ctx.rotate(-Math.PI / 2); // -90 grad drehen damit 12 uhr oben ist
     ctx.translate(-centerX, -centerY); // zurücksetzen zum alten ursprung
+
+    setInterval(drawClock, 1000); // jede sekunde aktualisieren
+    drawClock();

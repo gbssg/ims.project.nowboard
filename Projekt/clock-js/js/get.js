@@ -15,8 +15,11 @@ export class Get {
       const hourwinkel = (hours * Math.PI) / 6 + (minutes * Math.PI) / 360; // 30 grad pro h + 0.5 grad pro min
       const minutewinkel = (minutes * Math.PI) / 30 + (seconds * Math.PI) / 1800; // 6 grad pro min + 0.1 grad pro sek
       const secondwinkel = (seconds * Math.PI) / 30; // 6 grad pro sek
-
-      return { hourwinkel, minutewinkel, secondwinkel };
+      const littlesecondwinkel = ((seconds + 30) * Math.PI) / 30;
+      const littleminutewinkel = ((minutes + 30) * Math.PI) / 30 + (seconds * Math.PI) / 1800;
+      const littlehourwinkel = ((hours + 6) * Math.PI) / 6 + (minutes * Math.PI) / 360;
+      
+      return { hourwinkel, minutewinkel, secondwinkel, littlesecondwinkel, littleminutewinkel, littlehourwinkel };
     }
 
     zeigerlängen() {
