@@ -27,10 +27,7 @@
       drawer.minutemark();
 
       // mittelpunkt
-      drawer.mittelpunkt();
-
-      // aktuelle zeit holen
-      const { hours, minutes, seconds } = getter.time();      
+      drawer.mittelpunkt();  
 
       // winkel holen
       const { hourwinkel, minutewinkel, secondwinkel, littlesecondwinkel, littleminutewinkel, littlehourwinkel } = getter.winkel();
