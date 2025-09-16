@@ -29,7 +29,7 @@ export class Draw {
     }
 
     minutemark() {
-        const { ctx, centerX, centerY, radius, innerradius } = this;
+        const { ctx, centerX, centerY, radius } = this;
         for (let i = 0; i < 60; i++) {
             const winkel = (i * Math.PI) / 30;
             // abstand zwischen rand und markierungen

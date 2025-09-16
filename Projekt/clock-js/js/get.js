@@ -18,14 +18,4 @@ export class Get {
 
       return { hourwinkel, minutewinkel, secondwinkel };
     }
-
-    zeigerlängen() {
-        const { radius } = this;
-        // zeigerlängen holen
-      const hourHandLength = radius * 0.6;
-      const minuteHandLength = radius * 0.8;
-      const secondHandLength = radius * 0.9;
-
-      return { hourHandLength, minuteHandLength, secondHandLength };
-    }
 }

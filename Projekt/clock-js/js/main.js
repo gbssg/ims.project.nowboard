@@ -16,9 +16,7 @@
 
     // Funktion zeichnen der uhr
     function drawClock() {
-      // Hintergrund löschen
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+      
       // Rand zeichnen
       drawer.rand();
 
@@ -34,9 +32,6 @@
 
       // winkel holen
       const { hourwinkel, minutewinkel, secondwinkel } = getter.winkel();
-
-      // zeigerlängen holen
-      const { hourHandLength, minuteHandLength, secondHandLength } = getter.zeigerlängen();
 
       // stundenzeiger zeichnen
       drawer.hourpointer(hourwinkel);
