@@ -11,11 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
+    <None Include="wwwroot\scripts\draw.js" />
+    <None Include="wwwroot\scripts\get.js" />
+    <None Include="wwwroot\scripts\main.js" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\scripts\images\" />
+    <PackageReference Include="Microsoft.AspNet.WebApi.Client" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

@@ -6,6 +6,7 @@
     @using System.Text;
     @using httpdemo.OjpModel;
 @inject HttpClient Http
+@inject IJSRuntime JS
 
 <style>
     main {
@@ -31,7 +32,7 @@
     font-weight: bold;
     }
 
-    .clock-embed {
+    .clock {
     width: 210px;
     height: 210px;
     border: none;
@@ -74,11 +75,14 @@
 
 <main>
     <div class="header">
+
         <div>
             <div class="station-title">St. Gallen, Riethüsli</div>
         </div>
-        <iframe class="clock-embed" src=
-        "https://free.timeanddate.com/clock/i9xawfha/n268/szw210/szh210/hoc000/hbw4/cf100/hgr0/fav0/fiv0/mqc000/mqs3/mql25/mqw6/mqd96/mhc000/mhs3/mhl20/mhw6/mhd96/mmc000/mms3/mml10/mmw2/mmd96/hhw16/hmw16/hmr4/hss3/hsl90"></iframe>
+
+        @*Uhr*@
+        <canvas id="clock" class="clock"></canvas>
+
     </div>
 
     @if (datalist.Count == 0)
@@ -115,6 +119,10 @@
             }
             </tbody>
         </table>
+
+    <script src="scripts/draw.js"></script>
+    <script src="scripts/get.js"></script>
+    <script src="scripts/main.js"></script>
 </main>
 
 @code 
@@ -251,7 +259,7 @@
         public string haltestelle { get; set; }
     }
 
-        private static string RequestCreate()
+    private static string RequestCreate()
         {
             return @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
