@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\scripts\draw.js" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="wwwroot\scripts\draw.js" />
     <None Include="wwwroot\scripts\get.js" />
     <None Include="wwwroot\scripts\main.js" />
