@@ -100,7 +100,7 @@ export class Draw {
     // kleine verlängerung vom minutenzeiger
     littleminutepointer(littleminutewinkel) {
         const { ctx, centerX, centerY, radius } = this;
-        const littleminuteHandLength = radius * 0.3;
+        const littleminuteHandLength = radius * 0.25;
         // minutenzeiger zeichnen
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
