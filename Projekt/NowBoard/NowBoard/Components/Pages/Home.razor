@@ -15,6 +15,7 @@
     height: 100vh;
     padding: 20px;
     box-sizing: border-box;
+    position: relative
     }
 
     .header {
@@ -71,6 +72,15 @@
         position: relative;
         bottom: 15px;
     }
+
+    .clock {
+        width: 420px;
+        height: 420px;
+        position: absolute;
+        top: 20px;
+        right: 10px;
+        border: none;
+    }
 </style>
 
 <main>
@@ -80,8 +90,7 @@
             <div class="station-title">St. Gallen, Riethüsli</div>
         </div>
 
-        @*Uhr*@
-        <canvas id="clock" class="clock"></canvas>
+        <canvas id="clock" class="clock" height="400" width="400"></canvas>
 
     </div>
 
@@ -98,7 +107,7 @@
         <p class="loslaufen">Loslaufen in @GetLoslaufenCountdown() min</p>
     }
 
-        <table class="table">
+    <table class="table">
             <thead>
                 <tr>
                     <th>Linie</th>
@@ -119,23 +128,29 @@
             }
             </tbody>
         </table>
-
-    <script src="scripts/draw.js"></script>
-    <script src="scripts/get.js"></script>
-    <script src="scripts/main.js"></script>
 </main>
 
 @code 
 {
+    // Nach dem ersten rendern der komponente
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Funktion aufrufen um uhr zu zeichnen
+            await JS.InvokeVoidAsync("drawClock");
+        }
+    }
+
     private List<Datalist> datalist = new();
 
-    private Timer? _refreshTimer;
+    private Timer? refreshTimer;
 
     protected override async Task OnInitializedAsync()
     {
         await displaydepartures();
         // Timer jede minute starten
-        _refreshTimer = new Timer(async _ =>
+        refreshTimer = new Timer(async _ =>
         {
             await InvokeAsync(async () =>
             {
@@ -147,7 +162,7 @@
 
     public void Dispose()
     {
-        _refreshTimer?.Dispose();
+        refreshTimer?.Dispose();
     }
 
     private async Task displaydepartures()
@@ -179,7 +194,7 @@
                 var estimatedTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
                 var timetabledTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
                 var timetabledTime2 = timetabledTime.ToString("t");
-                var hinweis = (estimatedTime - timetabledTime).ToString();
+                var hinweis = (estimatedTime - timetabledTime).ToString("t");
 
                 datalist.Add(new Datalist
                 {
