@@ -1,5 +1,4 @@
-﻿// js/class.js
-export class Draw {
+﻿export class Draw {
     constructor(ctx, centerX, centerY, radius) {
         this.ctx = ctx;
         this.centerX = centerX;
