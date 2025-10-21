@@ -223,7 +223,7 @@
         var first = datalist[0];
         if (DateTime.TryParse(first.timetabledTime2, out var abfahrt))
         {
-            var loslaufen = abfahrt.AddMinutes(-6);
+            var loslaufen = abfahrt.AddMinutes(-8);
             return loslaufen.ToString("HH:mm");
         }
         return "-";
@@ -239,7 +239,7 @@
         var first = datalist[0];
         if (DateTime.TryParse(first.timetabledTime2, out var abfahrt))
         {
-            var loslaufen = abfahrt.AddMinutes(-6);
+            var loslaufen = abfahrt.AddMinutes(-8);
             var diff = (loslaufen - DateTime.Now).TotalMinutes;
             return Math.Max(0, (int)Math.Ceiling(diff));
         }
@@ -256,7 +256,7 @@
         var sec = datalist[1];
         if (DateTime.TryParse(sec.timetabledTime2, out var abfahrt))
         {
-            var loslaufen = abfahrt.AddMinutes(-6);
+            var loslaufen = abfahrt.AddMinutes(-8);
             var diff = (loslaufen - DateTime.Now).TotalMinutes;
             return Math.Max(0, (int)Math.Ceiling(diff));
         }
