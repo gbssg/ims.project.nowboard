@@ -44,29 +44,77 @@ namespace httpdemo
             var ojpReader = new XmlSerializer(typeof(Ojp));
             var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
 
-            var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value ?? "Unbekannt";
+            var deliveries = responseOjp?.OjpResponse?.ServiceDelivery?.OjpStopEventDeliveryList;
+            if (deliveries == null || deliveries.Count == 0)
+            {
+                Console.WriteLine("Keine Abfahrtsdaten gefunden");
+                return;
+            }
+
+            var allDepartures = new List<DepartureInfo>();
+
+            foreach (var delivery in deliveries)
+            {
+                if (delivery.StopEventResponseContext?.Places?.PlaceList?.Any() != true || delivery.StopEventResults == null)
+                    continue;
+
+                var haltestelle = delivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value ?? "Unbekannt";
+
+                foreach (var stopEvent in delivery.StopEventResults)
+                {
+                    var serviceDeparture = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture;
+                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(2);
+                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(2);
+                    var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
+                    var hinweis = estimatedTime - timetabledTime;
+
+                    allDepartures.Add(new DepartureInfo
+                    {
+                        TimetabledTime = timetabledTime,
+                        EstimatedTime = estimatedTime,
+                        Line = linie,
+                        Notice = hinweis,
+                        Station = haltestelle
+                    });
+                }
+            }
+
+            var sortedDepartures = allDepartures
+                .OrderBy(d => d.TimetabledTime)
+                .ToList(); // Abfahrten sortieren nach Zeit
 
             Console.WriteLine(" Haltestelle\t\t\tLinie\t\tAbfahrt\t\tHinweis");
             Console.WriteLine("-------------------------------------------------------------------------");
 
-            foreach (var stopEvent in responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults)
+            foreach (var departure in sortedDepartures)
             {
-                var estimatedTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
-                var timetabledTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
-                var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
-                var hinweis = estimatedTime - timetabledTime;
+                string anzeigeLinie = departure.Line;
+                string prefix = "";
+                string anzeigeHaltestelle = departure.Station;
 
-                if (linie == "180")
-                { }
-                else if (linie == "5")
+                if (departure.Line == "180")
+                { continue; } // Springt zur nächsten Abfahrt
+
+                else if (departure.Line == "5")
                 {
-                    Console.WriteLine($" {haltestelle}\t\tB {linie}\t\t{timetabledTime:HH:mm:ss}\t{hinweis}");
+                    prefix = "B";
                 }
-                else if (linie == "S21" || linie == "S22")
+                else if (departure.Line == "S21" || departure.Line == "S22")
                 {
-                    Console.WriteLine($" {haltestelle}\t\t{linie}\t\t{timetabledTime:HH:mm:ss}\t{hinweis}");
+                    prefix = "";
                 }
+
+                Console.WriteLine($" {anzeigeHaltestelle}\t\t{prefix}{anzeigeLinie}\t\t{departure.TimetabledTime:HH:mm:ss}\t{departure.Notice}");
             }
+        }
+
+        public class DepartureInfo
+        {
+            public DateTime TimetabledTime { get; set; }
+            public DateTime EstimatedTime { get; set; }
+            public string Line { get; set; }
+            public TimeSpan Notice { get; set; }
+            public string Station { get; set; }
         }
 
         private static string RequestCreate()
@@ -83,8 +131,6 @@ namespace httpdemo
         <Location>
           <PlaceRef>
             <StopPlaceRef>8506371</StopPlaceRef>
-            <StopPlaceRef>8574258</StopPlaceRef>
-            
             <Name>
               <Text>St. Gallen, Riethuesli</Text>
             </Name>
@@ -102,6 +148,32 @@ namespace httpdemo
           <UseRealtimeData>full</UseRealtimeData>
         </Params>
       </OJPStopEventRequest>
+
+    <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
+          <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
+          <OJPStopEventRequest>
+            <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
+            <siri:MessageIdentifier>SER</siri:MessageIdentifier>
+            <Location>
+              <PlaceRef>
+                <StopPlaceRef>8574258</StopPlaceRef>
+                <Name>
+                  <Text>St. Gallen Riethuesli</Text>
+                </Name>
+              </PlaceRef>
+            </Location>
+            <Params>
+              <OperatorFilter>
+                <Exclude>false</Exclude>
+                <OperatorRef>11</OperatorRef>
+              </OperatorFilter>
+              <NumberOfResults>10</NumberOfResults>
+              <StopEventType>departure</StopEventType>
+              <IncludePreviousCalls>false</IncludePreviousCalls>
+              <IncludeOnwardCalls>false</IncludeOnwardCalls>
+              <UseRealtimeData>full</UseRealtimeData>
+            </Params>
+          </OJPStopEventRequest>
     </siri:ServiceRequest>
   </OJPRequest>
 </OJP>";
