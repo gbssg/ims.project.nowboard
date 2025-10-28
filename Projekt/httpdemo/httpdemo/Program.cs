@@ -45,11 +45,6 @@ namespace httpdemo
             var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
 
             var deliveries = responseOjp?.OjpResponse?.ServiceDelivery?.OjpStopEventDeliveryList;
-            if (deliveries == null || deliveries.Count == 0)
-            {
-                Console.WriteLine("Keine Abfahrtsdaten gefunden");
-                return;
-            }
 
             var allDepartures = new List<DepartureInfo>();
 
