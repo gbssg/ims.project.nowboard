@@ -11,7 +11,7 @@ namespace httpdemo.OjpModel
         public string ProducerRef { get; set; }
 
         [XmlElement(ElementName = "OJPStopEventDelivery", Namespace = "http://www.vdv.de/ojp")]
-        public OjpStopEventDelivery OjpStopEventDelivery { get; set; }
+        public List<OjpStopEventDelivery> OjpStopEventDeliveryList { get; set; }
     }
 
 }
