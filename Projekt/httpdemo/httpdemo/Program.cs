@@ -44,31 +44,28 @@ namespace httpdemo
             var ojpReader = new XmlSerializer(typeof(Ojp));
             var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
 
-            var deliveries = responseOjp?.OjpResponse?.ServiceDelivery?.OjpStopEventDeliveryList;
+            var deliveries = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDeliveryList;
 
             var allDepartures = new List<DepartureInfo>();
 
             foreach (var delivery in deliveries)
             {
-                if (delivery.StopEventResponseContext?.Places?.PlaceList?.Any() != true || delivery.StopEventResults == null)
-                    continue;
-
                 var haltestelle = delivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value ?? "Unbekannt";
 
                 foreach (var stopEvent in delivery.StopEventResults)
                 {
                     var serviceDeparture = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture;
-                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(2);
-                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(2);
+                    var estimatedTime = serviceDeparture.EstimatedTime;
+                    var timetabledTime = serviceDeparture.TimetabledTime;
                     var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
-                    var hinweis = estimatedTime - timetabledTime;
+                    var hinweis = estimatedTime - timetabledTime; // hinweis.TotalMinutes wandelt die Zeit in Anzahl Minuten bzw. einen integer um
 
                     allDepartures.Add(new DepartureInfo
                     {
                         TimetabledTime = timetabledTime,
                         EstimatedTime = estimatedTime,
                         Line = linie,
-                        Notice = hinweis,
+                        Hinweis = hinweis,
                         Station = haltestelle
                     });
                 }
@@ -78,17 +75,15 @@ namespace httpdemo
                 .OrderBy(d => d.TimetabledTime)
                 .ToList(); // Abfahrten sortieren nach Zeit
 
-            Console.WriteLine(" Haltestelle\t\t\tLinie\t\tAbfahrt\t\tHinweis");
+            Console.WriteLine(" Haltestelle\t\t\tLinie\t\tAbfahrt\t\tVerspätung");
             Console.WriteLine("-------------------------------------------------------------------------");
 
             foreach (var departure in sortedDepartures)
             {
-                string anzeigeLinie = departure.Line;
                 string prefix = "";
-                string anzeigeHaltestelle = departure.Station;
 
                 if (departure.Line == "180")
-                { continue; } // Springt zur nächsten Abfahrt
+                { continue; } // Springt zur nächsten Abfahrt damit Linie 180 ausgelassen wird
 
                 else if (departure.Line == "5")
                 {
@@ -99,7 +94,7 @@ namespace httpdemo
                     prefix = "";
                 }
 
-                Console.WriteLine($" {anzeigeHaltestelle}\t\t{prefix}{anzeigeLinie}\t\t{departure.TimetabledTime:HH:mm:ss}\t{departure.Notice}");
+                Console.WriteLine($" {departure.Station}\t\t{prefix}{departure.Line}\t\t{departure.TimetabledTime:HH:mm}\t\t{departure.Hinweis}");
             }
         }
 
@@ -108,7 +103,7 @@ namespace httpdemo
             public DateTime TimetabledTime { get; set; }
             public DateTime EstimatedTime { get; set; }
             public string Line { get; set; }
-            public TimeSpan Notice { get; set; }
+            public TimeSpan Hinweis { get; set; }
             public string Station { get; set; }
         }
 
