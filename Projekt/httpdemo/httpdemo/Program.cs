@@ -55,10 +55,10 @@ namespace httpdemo
                 foreach (var stopEvent in delivery.StopEventResults)
                 {
                     var serviceDeparture = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture;
-                    var estimatedTime = serviceDeparture.EstimatedTime;
-                    var timetabledTime = serviceDeparture.TimetabledTime;
+                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(1);
+                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(1);
                     var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
-                    var hinweis = estimatedTime - timetabledTime; // hinweis.TotalMinutes wandelt die Zeit in Anzahl Minuten bzw. einen integer um
+                    TimeSpan hinweis = estimatedTime - timetabledTime; // hinweis.TotalMinutes wandelt die Zeit in Anzahl Minuten bzw. einen integer um
 
                     allDepartures.Add(new DepartureInfo
                     {
@@ -93,8 +93,14 @@ namespace httpdemo
                 {
                     prefix = "";
                 }
-
-                Console.WriteLine($" {departure.Station}\t\t{prefix}{departure.Line}\t\t{departure.TimetabledTime:HH:mm}\t\t{departure.Hinweis}");
+                if (departure.Hinweis.TotalMinutes < 0.9)
+                {
+                    Console.WriteLine($" {departure.Station}\t\t{prefix}{departure.Line}\t\t{departure.TimetabledTime:HH:mm}\t\t");
+                }
+                else
+                {
+                    Console.WriteLine($" {departure.Station}\t\t{prefix}{departure.Line}\t\t{departure.TimetabledTime:HH:mm}\t\t{string.Format("{0:%m}'", departure.Hinweis)}");
+                }
             }
         }
 
@@ -113,11 +119,7 @@ namespace httpdemo
 <OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
   <OJPRequest>
     <siri:ServiceRequest>
-      <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-      <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
       <OJPStopEventRequest>
-        <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-        <siri:MessageIdentifier>SER</siri:MessageIdentifier>
         <Location>
           <PlaceRef>
             <StopPlaceRef>8506371</StopPlaceRef>
@@ -131,7 +133,7 @@ namespace httpdemo
             <Exclude>false</Exclude>
             <OperatorRef>11</OperatorRef>
           </OperatorFilter>
-          <NumberOfResults>7</NumberOfResults>
+          <NumberOfResults>5</NumberOfResults>
           <StopEventType>departure</StopEventType>
           <IncludePreviousCalls>false</IncludePreviousCalls>
           <IncludeOnwardCalls>false</IncludeOnwardCalls>
@@ -139,11 +141,7 @@ namespace httpdemo
         </Params>
       </OJPStopEventRequest>
 
-    <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-          <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
           <OJPStopEventRequest>
-            <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-            <siri:MessageIdentifier>SER</siri:MessageIdentifier>
             <Location>
               <PlaceRef>
                 <StopPlaceRef>8574258</StopPlaceRef>
@@ -157,7 +155,7 @@ namespace httpdemo
                 <Exclude>false</Exclude>
                 <OperatorRef>11</OperatorRef>
               </OperatorFilter>
-              <NumberOfResults>10</NumberOfResults>
+              <NumberOfResults>5</NumberOfResults>
               <StopEventType>departure</StopEventType>
               <IncludePreviousCalls>false</IncludePreviousCalls>
               <IncludeOnwardCalls>false</IncludeOnwardCalls>
