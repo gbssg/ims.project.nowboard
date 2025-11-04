@@ -120,7 +120,7 @@
             @foreach (var item in datalist)
             {
                 <tr>
-                    <td>B @item.linie</td>
+                    <td>@(item.linie == "5" ? $"B{item.linie}" : item.linie)</td>
                     <td>St. Gallen, Bahnhof</td>
                     <td class="abfahrtzeit">@item.timetabledTime2</td>
                     <td class="hinweis" style="text-align: match-parent;">+ @item.hinweis</td>
@@ -165,6 +165,7 @@
         refreshTimer?.Dispose();
     }
 
+    // Erweiterung von displaydepartures die mehrere Deliveries verarbeitet
     private async Task displaydepartures()
     {
         using var client = new HttpClient();
@@ -179,30 +180,76 @@
 
         var ojpReader = new XmlSerializer(typeof(Ojp));
         var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
+        if (responseOjp == null)
+            return;
 
-        var haltestelle = responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResponseContext.Places.PlaceList[0].StopPlace.StopPlaceName.Text.Value ?? "Unbekannt";
+        // sammle alle abfahrten aus allen deliveries
+        var allDepartures = new List<DepartureInfo>();
 
+        var serviceDelivery = responseOjp.OjpResponse?.ServiceDelivery;
+        if (serviceDelivery != null)
+        {
+            var deliveries = serviceDelivery.OjpStopEventDeliveryList;
+
+            foreach (var delivery in deliveries)
+            {
+                var haltestelle = delivery.StopEventResponseContext?.Places?.PlaceList?[0]?.StopPlace?.StopPlaceName?.Text?.Value ?? "Unbekannt";
+
+                if (delivery.StopEventResults == null)
+                    continue;
+
+                foreach (var stopEvent in delivery.StopEventResults)
+                {
+                    var serviceDeparture = stopEvent.StopEvent?.ThisCall?.CallAtStop?.ServiceDeparture;
+                    if (serviceDeparture == null)
+                        continue;
+
+                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(2);
+                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(2);
+                    var linie = stopEvent.StopEvent?.Service?.PublishedServiceName?.Text?.Value ?? string.Empty;
+                    TimeSpan hinweis = estimatedTime - timetabledTime;
+
+                    allDepartures.Add(new DepartureInfo
+                    {
+                        TimetabledTime = timetabledTime,
+                        EstimatedTime = estimatedTime,
+                        Line = linie,
+                        Hinweis = hinweis,
+                        Station = haltestelle
+                    });
+                }
+            }
+        }
+
+        var sortedDepartures = allDepartures
+            .OrderBy(d => d.TimetabledTime)
+            .ToList();
+
+        // auf gewünschte linien filtern (S21, S22, 5 als B5) und max. Anzahl 5
         datalist.Clear();
         int count = 0;
-        foreach (var stopEvent in responseOjp.OjpResponse.ServiceDelivery.OjpStopEventDelivery.StopEventResults)
+        foreach (var departure in sortedDepartures)
         {
-            var linie = stopEvent.StopEvent.Service.PublishedServiceName.Text.Value;
+            if (departure.Line == "180")
+                continue;
 
-            // Filter nur Linie 5, Linie 180 ausschliessen, max. 5 Ergebnisse
-            if (linie == "5")
+            // zeige S21, S22 und linie 5 (als B5)
+            if (departure.Line == "5" || departure.Line == "S21" || departure.Line == "S22")
             {
-                var estimatedTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.EstimatedTime.AddHours(2);
-                var timetabledTime = stopEvent.StopEvent.ThisCall.CallAtStop.ServiceDeparture.TimetabledTime.AddHours(2);
-                var timetabledTime2 = timetabledTime.ToString("t");
-                var hinweis = (estimatedTime - timetabledTime).ToString("t");
+                var timetabledTime2 = departure.TimetabledTime.ToString("t");
+                string hinweis;
+                if (departure.Hinweis.TotalMinutes < 0.9)
+                    hinweis = string.Empty;
+                else
+                    hinweis = $"{(int)Math.Round(departure.Hinweis.TotalMinutes)}'";
 
                 datalist.Add(new Datalist
                 {
-                    haltestelle = haltestelle,
-                    estimatedTime = estimatedTime.ToString("t"),
-                    timetabledTime = timetabledTime.ToString("t"),
+                    haltestelle = departure.Station,
+                    estimatedTime = departure.EstimatedTime.ToString("t"),
+                    timetabledTime = departure.TimetabledTime.ToString("t"),
                     timetabledTime2 = timetabledTime2,
-                    linie = linie,
+                    linie = departure.Line,
                     hinweis = hinweis
                 });
 
@@ -272,6 +319,16 @@
         public string hinweis { get; set; }
         public string linie { get; set; }
         public string haltestelle { get; set; }
+    }
+
+    // hilfsklasse wie aus der Konsolenapp zur zwischenablage der Daten
+    private class DepartureInfo
+    {
+        public DateTime TimetabledTime { get; set; }
+        public DateTime EstimatedTime { get; set; }
+        public string Line { get; set; } = string.Empty;
+        public TimeSpan Hinweis { get; set; }
+        public string Station { get; set; } = string.Empty;
     }
 
     private static string RequestCreate()
