@@ -8,80 +8,7 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 
-<style>
-    main {
-    background-color: #00157e;
-    color: white;
-    height: 100vh;
-    padding: 20px;
-    box-sizing: border-box;
-    position: relative
-    }
-
-    .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-top: 20px;
-    margin-bottom: 40px;
-    padding: 0;
-    font-size: 60px;
-    }
-
-    .station-title {
-    font-size: 1.5em;
-    font-weight: bold;
-    }
-
-    .clock {
-    width: 210px;
-    height: 210px;
-    border: none;
-    }
-
-    .table {
-    margin-top: 100px;
-    width: 100%;
-    border-collapse: collapse;
-    }
-
-    .table th,
-    .table td {
-    border-bottom: 2px solid white;
-    padding: 10px;
-    text-align: left;
-    color: white;
-    font-size: 50px;
-    }
-
-    .table th {
-    font-weight: normal;
-    }
-
-    .abfahrtzeit {
-    font-weight: bold;
-    }
-
-    .hinweis {
-    color: #ccc;
-    }
-
-    .loslaufen {
-        font-size: 70px;
-        width: fit-content;
-        position: relative;
-        bottom: 15px;
-    }
-
-    .clock {
-        width: 420px;
-        height: 420px;
-        position: absolute;
-        top: 20px;
-        right: 10px;
-        border: none;
-    }
-</style>
+<link href="css/Home.css" rel="stylesheet"/>
 
 <main>
     <div class="header">
@@ -204,8 +131,8 @@
                     if (serviceDeparture == null)
                         continue;
 
-                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(2);
-                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(2);
+                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(1);
+                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(1);
                     var linie = stopEvent.StopEvent?.Service?.PublishedServiceName?.Text?.Value ?? string.Empty;
                     TimeSpan hinweis = estimatedTime - timetabledTime;
 
