@@ -1,8 +1,7 @@
-﻿body {
-    main {
+﻿    main {
     background-color: #00157e;
     color: white;
-    height: 100vh;
+    min-height: 100vh;
     padding: 20px;
     box-sizing: border-box;
     position: relative
@@ -19,7 +18,7 @@
 }
 
     .station-title {
-    font-size: 1.5em;
+    font-size: 90px;
     font-weight: bold;
 }
 
@@ -71,4 +70,33 @@
     right: 10px;
     border: none;
 }
+
+@media (max-width: 1370px) {
+    .header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        font-size: 5vw;
+    }
+
+    .station-title {
+        font-size: 6vw;
+    }
+
+    .clock {
+        position: static;
+        width: 40vw;
+        height: 40vw;
+        margin: 20px auto;
+        display: block;
+    }
+
+    .table th,
+    .table td {
+        font-size: 4vw;
+    }
+
+    .loslaufen {
+        font-size: 5vw;
+    }
 }
