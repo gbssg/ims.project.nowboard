@@ -1,24 +1,20 @@
 ﻿@page "/"
-@using System.Linq.Expressions;
-    @using System.Net.Http;
-    @using System.Xml.Serialization;
-    @using System.Net.Http.Headers;
-    @using System.Text;
-    @using httpdemo.OjpModel;
+@using System.Net.Http
+@using System.Net.Http.Headers
+@using System.Text
+@using System.Xml.Serialization
+@using httpdemo.OjpModel
 @inject HttpClient Http
 @inject IJSRuntime JS
 
-<link href="css/Home.css" rel="stylesheet"/>
+<link href="css/Home.css" rel="stylesheet" />
 
 <main>
     <div class="header">
-
         <div>
             <div class="station-title">St. Gallen, Riethüsli</div>
         </div>
-
         <canvas id="clock" class="clock" height="400" width="400"></canvas>
-
     </div>
 
     @if (datalist.Count == 0)
@@ -35,240 +31,146 @@
     }
 
     <table class="table">
-            <thead>
-                <tr>
-                    <th>Linie</th>
-                    <th>Ziel</th>
-                    <th>Abfahrt</th>
-                    <th>Hinweis</th>
-                </tr>
-            </thead>
-            <tbody>
+        <thead>
+            <tr>
+                <th>Linie</th>
+                <th>Ziel</th>
+                <th>Abfahrt</th>
+                <th>Hinweis</th>
+            </tr>
+        </thead>
+        <tbody>
             @foreach (var item in datalist)
             {
                 <tr>
                     <td>@(item.linie == "5" ? $"B{item.linie}" : item.linie)</td>
                     <td>St. Gallen, Bahnhof</td>
                     <td class="abfahrtzeit">@item.timetabledTime</td>
-                    <td class="hinweis" style="text-align: match-parent;">+ @item.hinweis</td>
+                    <td class="hinweis">+ @item.hinweis</td>
                 </tr>
             }
-            </tbody>
-        </table>
+        </tbody>
+    </table>
 </main>
 
-@code 
-{
-    // Nach dem ersten rendern der komponente
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Funktion aufrufen um uhr zu zeichnen
-            await JS.InvokeVoidAsync("drawClock");
-        }
-    }
-
+@code {
     private List<Datalist> datalist = new();
-
     private Timer? refreshTimer;
-
-    // protected async Task WalkNow()
-    // {
-    //     refreshTimer = new Timer();
-    // }
 
     protected override async Task OnInitializedAsync()
     {
-        await displaydepartures();
-        // Timer jede minute starten
+        await DisplayDepartures();
+
+        // Timer aktualisiert Abfahrten jede Minute
         refreshTimer = new Timer(async _ =>
         {
             await InvokeAsync(async () =>
             {
-                await displaydepartures();
+                await DisplayDepartures();
                 StateHasChanged();
             });
         }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
     }
 
-    public void Dispose()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        refreshTimer?.Dispose();
+        if (firstRender)
+            await JS.InvokeVoidAsync("drawClock");
     }
 
-    // Erweiterung von displaydepartures die mehrere Deliveries verarbeitet
-    private async Task displaydepartures()
+    public void Dispose() => refreshTimer?.Dispose();
+
+    private async Task DisplayDepartures()
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
+        using var client = new HttpClient
+        {
+            BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20")
+        };
 
-        var requestData = RequestCreate();
-        var request = new StringContent(requestData, Encoding.UTF8, "application/xml");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9"
+        );
 
+        var request = new StringContent(RequestCreate(), Encoding.UTF8, "application/xml");
         var response = await client.PostAsync("", request);
         var responseXML = await response.Content.ReadAsStringAsync();
 
-        var ojpReader = new XmlSerializer(typeof(Ojp));
-        var responseOjp = (Ojp?)ojpReader.Deserialize(new StringReader(responseXML));
-        if (responseOjp == null)
+        var serializer = new XmlSerializer(typeof(Ojp));
+        if (serializer.Deserialize(new StringReader(responseXML)) is not Ojp responseOjp)
             return;
 
-        // sammle alle abfahrten aus allen deliveries
+        var serviceDelivery = responseOjp.OjpResponse?.ServiceDelivery;
+        if (serviceDelivery == null)
+            return;
+
         var allDepartures = new List<DepartureInfo>();
 
-        var serviceDelivery = responseOjp.OjpResponse?.ServiceDelivery;
-        if (serviceDelivery != null)
+        foreach (var delivery in serviceDelivery.OjpStopEventDeliveryList)
         {
-            var deliveries = serviceDelivery.OjpStopEventDeliveryList;
+            var stopName = delivery.StopEventResponseContext?.Places?.PlaceList?[0]?.StopPlace?.StopPlaceName?.Text?.Value ?? "Unbekannt";
 
-            foreach (var delivery in deliveries)
-            {
-                var haltestelle = delivery.StopEventResponseContext?.Places?.PlaceList?[0]?.StopPlace?.StopPlaceName?.Text?.Value ?? "Unbekannt";
-
-                if (delivery.StopEventResults == null)
-                    continue;
-
-                foreach (var stopEvent in delivery.StopEventResults)
-                {
-                    var serviceDeparture = stopEvent.StopEvent?.ThisCall?.CallAtStop?.ServiceDeparture;
-                    if (serviceDeparture == null)
-                        continue;
-
-                    var estimatedTime = serviceDeparture.EstimatedTime.AddHours(1);
-                    var timetabledTime = serviceDeparture.TimetabledTime.AddHours(1);
-                    var linie = stopEvent.StopEvent?.Service?.PublishedServiceName?.Text?.Value ?? string.Empty;
-                    TimeSpan hinweis = estimatedTime - timetabledTime;
-
-                    allDepartures.Add(new DepartureInfo
-                    {
-                        TimetabledTime = timetabledTime,
-                        EstimatedTime = estimatedTime,
-                        Line = linie,
-                        Hinweis = hinweis,
-                        Station = haltestelle
-                    });
-                }
-            }
-        }
-
-        var sortedDepartures = allDepartures
-            .OrderBy(d => d.TimetabledTime)
-            .ToList();
-
-        // sü
-        allDepartures = sortedDepartures;
-
-        // nach linien filtern (S21, S22, 5 als B5) und max. Anzahl 5
-        datalist.Clear();
-        int count = 0;
-        foreach (var departure in sortedDepartures)
-        {
-            if (departure.Line == "180")
+            if (delivery.StopEventResults == null)
                 continue;
 
-            // zeige S21, S22 und linie 5 (als B5)
-            if (departure.Line == "5" || departure.Line == "S21" || departure.Line == "S22")
+            foreach (var stopEvent in delivery.StopEventResults)
             {
-                var estimatedTime2 = departure.EstimatedTime.ToString("t");
-                string hinweis;
-                if (departure.Hinweis.TotalMinutes < 0.9)
-                    hinweis = string.Empty;
-                else
-                    hinweis = $"{(int)Math.Round(departure.Hinweis.TotalMinutes)}'";
+                var serviceDeparture = stopEvent.StopEvent?.ThisCall?.CallAtStop?.ServiceDeparture;
+                if (serviceDeparture == null)
+                    continue;
 
-                datalist.Add(new Datalist
+                var estimated = serviceDeparture.EstimatedTime.AddHours(1);
+                var scheduled = serviceDeparture.TimetabledTime.AddHours(1);
+                var line = stopEvent.StopEvent?.Service?.PublishedServiceName?.Text?.Value ?? string.Empty;
+
+                allDepartures.Add(new DepartureInfo
                 {
-                    haltestelle = departure.Station,
-                    estimatedTime = departure.EstimatedTime.ToString("t"),
-                    timetabledTime = departure.TimetabledTime.ToString("t"),
-                    estimatedTime2 = estimatedTime2,
-                    linie = departure.Line,
-                    hinweis = hinweis
+                    TimetabledTime = scheduled,
+                    EstimatedTime = estimated,
+                    Line = line,
+                    Hinweis = estimated - scheduled,
+                    Station = stopName
                 });
-
-                count++;
-                if (count >= 5)
-                    break;
             }
         }
-    }
 
-    private string GetLoslaufenZeit()
-    {
-        if (datalist.Count == 0)
-        {
-            return "-";
-        }
-
-        var first = datalist[0];
-        if (DateTime.TryParse(first.estimatedTime2, out var abfahrt))
-        {
-            var loslaufen = abfahrt.AddMinutes(-8);
-            return loslaufen.ToString("HH:mm");
-        }
-        return "-";
+        datalist = allDepartures
+            .Where(d => d.Line is "5" or "S21" or "S22")
+            .OrderBy(d => d.TimetabledTime)
+            .Take(5)
+            .Select(d => new Datalist
+            {
+                haltestelle = d.Station,
+                timetabledTime = d.TimetabledTime.ToString("t"),
+                estimatedTime = d.EstimatedTime.ToString("t"),
+                estimatedTime2 = d.EstimatedTime.ToString("t"),
+                linie = d.Line,
+                hinweis = d.Hinweis.TotalMinutes < 0.9 ? string.Empty : $"{(int)Math.Round(d.Hinweis.TotalMinutes)}'"
+            })
+            .ToList();
     }
 
     private int GetLoslaufenCountdown()
     {
-        if (datalist.Count == 0)
-        {
-            return 0;
-        }
+        if (datalist.Count == 0) return 0;
+        if (!DateTime.TryParse(datalist[0].estimatedTime2, out var abfahrt)) return 0;
 
-        var first = datalist[0];
-        if (DateTime.TryParse(first.estimatedTime2, out var abfahrt))
-        {
-            var loslaufen = abfahrt.AddMinutes(-6);
-            var diff = (loslaufen - DateTime.Now).TotalMinutes;
-            return Math.Max(0, (int)Math.Ceiling(diff));
-        }
-        return 0;
+        var loslaufen = abfahrt.AddMinutes(-6);
+        var diff = (loslaufen - DateTime.Now).TotalMinutes;
+        return Math.Max(0, (int)Math.Ceiling(diff));
     }
 
-    private int GetLoslaufenCountdown2() // Idee: Wenn Time = 0 -> "Jetzt loslaufen" ausgeben
+    private int GetLoslaufenCountdown2()
     {
-        if (datalist.Count == 0)
-        {
-            return 0;
-        }
+        if (datalist.Count < 2) return 0;
+        if (!DateTime.TryParse(datalist[1].estimatedTime2, out var abfahrt)) return 0;
 
-        var sec = datalist[1];
-        if (DateTime.TryParse(sec.estimatedTime2, out var abfahrt))
-        {
-            var loslaufen = abfahrt.AddMinutes(-6);
-            var diff = (loslaufen - DateTime.Now).TotalMinutes;
-            return Math.Max(0, (int)Math.Ceiling(diff));
-        }
-        return 0;
+        var loslaufen = abfahrt.AddMinutes(-6);
+        var diff = (loslaufen - DateTime.Now).TotalMinutes;
+        return Math.Max(0, (int)Math.Ceiling(diff));
     }
 
-
-    public class Datalist
-    {
-        public string estimatedTime { get; set; }
-        public string estimatedTime2 { get; set; }
-        public string timetabledTime { get; set; }
-        public string hinweis { get; set; }
-        public string linie { get; set; }
-        public string haltestelle { get; set; }
-    }
-
-    // hilfsklasse wie aus der Konsolenapp
-    public class DepartureInfo
-    {
-        public DateTime TimetabledTime { get; set; }
-        public DateTime EstimatedTime { get; set; }
-        public string Line { get; set; } = string.Empty;
-        public TimeSpan Hinweis { get; set; }
-        public string Station { get; set; } = string.Empty;
-    }
-
-    private static string RequestCreate()
-        {
-            return @"<?xml version=""1.0"" encoding=""UTF-8""?>
+    private static string RequestCreate() => @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
   <OJPRequest>
     <siri:ServiceRequest>
@@ -278,16 +180,11 @@
         <Location>
           <PlaceRef>
             <StopPlaceRef>8574258</StopPlaceRef>
-            <Name>
-              <Text>St. Gallen, Riethuesli</Text>
-            </Name>
+            <Name><Text>St. Gallen, Riethuesli</Text></Name>
           </PlaceRef>
         </Location>
         <Params>
-          <OperatorFilter>
-            <Exclude>false</Exclude>
-            <OperatorRef>11</OperatorRef>
-          </OperatorFilter>
+          <OperatorFilter><Exclude>false</Exclude><OperatorRef>11</OperatorRef></OperatorFilter>
           <NumberOfResults>5</NumberOfResults>
           <StopEventType>departure</StopEventType>
           <IncludePreviousCalls>false</IncludePreviousCalls>
@@ -302,16 +199,11 @@
         <Location>
           <PlaceRef>
             <StopPlaceRef>8506371</StopPlaceRef>
-            <Name>
-              <Text>St. Gallen Riethuesli</Text>
-            </Name>
+            <Name><Text>St. Gallen Riethuesli</Text></Name>
           </PlaceRef>
         </Location>
         <Params>
-          <OperatorFilter>
-            <Exclude>false</Exclude>
-            <OperatorRef>11</OperatorRef>
-          </OperatorFilter>
+          <OperatorFilter><Exclude>false</Exclude><OperatorRef>11</OperatorRef></OperatorFilter>
           <NumberOfResults>5</NumberOfResults>
           <StopEventType>departure</StopEventType>
           <IncludePreviousCalls>false</IncludePreviousCalls>
@@ -322,5 +214,23 @@
     </siri:ServiceRequest>
   </OJPRequest>
 </OJP>";
-        }
+
+    private class Datalist
+    {
+        public string estimatedTime { get; set; } = string.Empty;
+        public string estimatedTime2 { get; set; } = string.Empty;
+        public string timetabledTime { get; set; } = string.Empty;
+        public string hinweis { get; set; } = string.Empty;
+        public string linie { get; set; } = string.Empty;
+        public string haltestelle { get; set; } = string.Empty;
+    }
+
+    private class DepartureInfo
+    {
+        public DateTime TimetabledTime { get; set; }
+        public DateTime EstimatedTime { get; set; }
+        public string Line { get; set; } = string.Empty;
+        public TimeSpan Hinweis { get; set; }
+        public string Station { get; set; } = string.Empty;
+    }
 }
