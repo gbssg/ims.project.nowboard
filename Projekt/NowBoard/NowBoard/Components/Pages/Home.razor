@@ -21,13 +21,13 @@
     {
         <span>Keine Abfahrten gefunden.</span>
     }
-    else if (GetLoslaufenCountdown() <= 0)
+    else if (GetLoslaufenCountdown(0) <= 0)
     {
-        <p class="loslaufen">Loslaufen in @GetLoslaufenCountdown2() min</p>
+        <p class="loslaufen">Loslaufen in @GetLoslaufenCountdown(1) min</p>
     }
     else
     {
-        <p class="loslaufen">Loslaufen in @GetLoslaufenCountdown() min</p>
+        <p class="loslaufen">Loslaufen in @GetLoslaufenCountdown(0) min</p>
     }
 
     <table class="table">
@@ -46,7 +46,15 @@
                     <td>@(item.linie == "5" ? $"B{item.linie}" : item.linie)</td>
                     <td>St. Gallen, Bahnhof</td>
                     <td class="abfahrtzeit">@item.timetabledTime</td>
-                    <td class="hinweis">+ @item.hinweis</td>
+
+                    @if (@item.hinweis == "")
+                    {
+                        <td class="hinweis">@item.hinweis</td>
+                    }
+                    else
+                    {
+                        <td class="hinweis">+ @item.hinweis</td>
+                    }
                 </tr>
             }
         </tbody>
@@ -150,23 +158,14 @@
             .ToList();
     }
 
-    private int GetLoslaufenCountdown()
+    private int GetLoslaufenCountdown(int index)
     {
-        if (datalist.Count == 0) return 0;
-        if (!DateTime.TryParse(datalist[0].estimatedTime2, out var abfahrt)) return 0;
+        if (datalist.Count <= index) return 0;
+        if (!DateTime.TryParse(datalist[index].estimatedTime2, out var abfahrt)) return 0;
 
         var loslaufen = abfahrt.AddMinutes(-6);
         var diff = (loslaufen - DateTime.Now).TotalMinutes;
-        return Math.Max(0, (int)Math.Ceiling(diff));
-    }
 
-    private int GetLoslaufenCountdown2()
-    {
-        if (datalist.Count < 2) return 0;
-        if (!DateTime.TryParse(datalist[1].estimatedTime2, out var abfahrt)) return 0;
-
-        var loslaufen = abfahrt.AddMinutes(-6);
-        var diff = (loslaufen - DateTime.Now).TotalMinutes;
         return Math.Max(0, (int)Math.Ceiling(diff));
     }
 
