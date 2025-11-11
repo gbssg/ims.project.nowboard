@@ -49,7 +49,7 @@
                 <tr>
                     <td>@(item.linie == "5" ? $"B{item.linie}" : item.linie)</td>
                     <td>St. Gallen, Bahnhof</td>
-                    <td class="abfahrtzeit">@item.timetabledTime2</td>
+                    <td class="abfahrtzeit">@item.timetabledTime</td>
                     <td class="hinweis" style="text-align: match-parent;">+ @item.hinweis</td>
                 </tr>
             }
@@ -72,6 +72,11 @@
     private List<Datalist> datalist = new();
 
     private Timer? refreshTimer;
+
+    // protected async Task WalkNow()
+    // {
+    //     refreshTimer = new Timer();
+    // }
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,7 +157,10 @@
             .OrderBy(d => d.TimetabledTime)
             .ToList();
 
-        // auf gewünschte linien filtern (S21, S22, 5 als B5) und max. Anzahl 5
+        // sü
+        allDepartures = sortedDepartures;
+
+        // nach linien filtern (S21, S22, 5 als B5) und max. Anzahl 5
         datalist.Clear();
         int count = 0;
         foreach (var departure in sortedDepartures)
@@ -163,7 +171,7 @@
             // zeige S21, S22 und linie 5 (als B5)
             if (departure.Line == "5" || departure.Line == "S21" || departure.Line == "S22")
             {
-                var timetabledTime2 = departure.TimetabledTime.ToString("t");
+                var estimatedTime2 = departure.EstimatedTime.ToString("t");
                 string hinweis;
                 if (departure.Hinweis.TotalMinutes < 0.9)
                     hinweis = string.Empty;
@@ -175,7 +183,7 @@
                     haltestelle = departure.Station,
                     estimatedTime = departure.EstimatedTime.ToString("t"),
                     timetabledTime = departure.TimetabledTime.ToString("t"),
-                    timetabledTime2 = timetabledTime2,
+                    estimatedTime2 = estimatedTime2,
                     linie = departure.Line,
                     hinweis = hinweis
                 });
@@ -195,7 +203,7 @@
         }
 
         var first = datalist[0];
-        if (DateTime.TryParse(first.timetabledTime2, out var abfahrt))
+        if (DateTime.TryParse(first.estimatedTime2, out var abfahrt))
         {
             var loslaufen = abfahrt.AddMinutes(-8);
             return loslaufen.ToString("HH:mm");
@@ -211,16 +219,16 @@
         }
 
         var first = datalist[0];
-        if (DateTime.TryParse(first.timetabledTime2, out var abfahrt))
+        if (DateTime.TryParse(first.estimatedTime2, out var abfahrt))
         {
-            var loslaufen = abfahrt.AddMinutes(-8);
+            var loslaufen = abfahrt.AddMinutes(-6);
             var diff = (loslaufen - DateTime.Now).TotalMinutes;
             return Math.Max(0, (int)Math.Ceiling(diff));
         }
         return 0;
     }
 
-    private int GetLoslaufenCountdown2()
+    private int GetLoslaufenCountdown2() // Idee: Wenn Time = 0 -> "Jetzt loslaufen" ausgeben
     {
         if (datalist.Count == 0)
         {
@@ -228,9 +236,9 @@
         }
 
         var sec = datalist[1];
-        if (DateTime.TryParse(sec.timetabledTime2, out var abfahrt))
+        if (DateTime.TryParse(sec.estimatedTime2, out var abfahrt))
         {
-            var loslaufen = abfahrt.AddMinutes(-8);
+            var loslaufen = abfahrt.AddMinutes(-6);
             var diff = (loslaufen - DateTime.Now).TotalMinutes;
             return Math.Max(0, (int)Math.Ceiling(diff));
         }
@@ -241,15 +249,15 @@
     public class Datalist
     {
         public string estimatedTime { get; set; }
+        public string estimatedTime2 { get; set; }
         public string timetabledTime { get; set; }
-        public string timetabledTime2 { get; set; }
         public string hinweis { get; set; }
         public string linie { get; set; }
         public string haltestelle { get; set; }
     }
 
-    // hilfsklasse wie aus der Konsolenapp zur zwischenablage der Daten
-    private class DepartureInfo
+    // hilfsklasse wie aus der Konsolenapp
+    public class DepartureInfo
     {
         public DateTime TimetabledTime { get; set; }
         public DateTime EstimatedTime { get; set; }
@@ -264,8 +272,6 @@
 <OJP xmlns=""http://www.vdv.de/ojp"" xmlns:siri=""http://www.siri.org.uk/siri"" version=""2.0"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:schemaLocation=""http://www.vdv.de/ojp ../../../../OJP4/OJP.xsd"">
   <OJPRequest>
     <siri:ServiceRequest>
-      <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-      <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
       <OJPStopEventRequest>
         <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
         <siri:MessageIdentifier>SER</siri:MessageIdentifier>
@@ -282,7 +288,7 @@
             <Exclude>false</Exclude>
             <OperatorRef>11</OperatorRef>
           </OperatorFilter>
-          <NumberOfResults>10</NumberOfResults>
+          <NumberOfResults>5</NumberOfResults>
           <StopEventType>departure</StopEventType>
           <IncludePreviousCalls>false</IncludePreviousCalls>
           <IncludeOnwardCalls>false</IncludeOnwardCalls>
@@ -290,8 +296,6 @@
         </Params>
       </OJPStopEventRequest>
 
-     <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
-      <siri:RequestorRef>MENTZRegTest</siri:RequestorRef>
       <OJPStopEventRequest>
         <siri:RequestTimestamp>2024-06-01T11:24:34.598Z</siri:RequestTimestamp>
         <siri:MessageIdentifier>SER</siri:MessageIdentifier>
@@ -308,7 +312,7 @@
             <Exclude>false</Exclude>
             <OperatorRef>11</OperatorRef>
           </OperatorFilter>
-          <NumberOfResults>10</NumberOfResults>
+          <NumberOfResults>5</NumberOfResults>
           <StopEventType>departure</StopEventType>
           <IncludePreviousCalls>false</IncludePreviousCalls>
           <IncludeOnwardCalls>false</IncludeOnwardCalls>
