@@ -1,4 +1,4 @@
-﻿namespace httpdemo.OjpModel
+﻿namespace NowBoard.Data.OjpModel
 {
     public class Attribute
     {

@@ -1,6 +1,6 @@
 ﻿using System.Xml.Serialization;
 
-namespace httpdemo.OjpModel
+namespace NowBoard.Data.OjpModel
 {
     public class StopPoint
     {

@@ -1,5 +1,4 @@
-﻿
-namespace httpdemo.OjpModel
+﻿namespace NowBoard.Data.OjpModel
 {
     public class Place
     {
