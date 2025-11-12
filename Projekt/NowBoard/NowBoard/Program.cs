@@ -1,11 +1,17 @@
 using NowBoard.Components;
+using NowBoard.Data.Setup;
 
 var builder = WebApplication.CreateBuilder(args);
+var otdSetup = new OpenTransportDataSetup();
+
+builder.Configuration.AddJsonFile($"appsettings.{builder.Configuration["ENVIRONMENT"]}.secrets.json", false);
+builder.Configuration.GetRequiredSection("OpenTransportData")
+                     .Bind(otdSetup);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
+builder.Services.AddSingleton(s => otdSetup);
 builder.Services.AddHttpClient("OjpAPI", client =>
 {
     client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20/");
