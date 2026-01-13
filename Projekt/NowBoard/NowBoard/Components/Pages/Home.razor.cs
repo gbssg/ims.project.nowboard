@@ -110,13 +110,13 @@ namespace NowBoard.Components.Pages
 
         private int GetLoslaufenCountdown(int index)
         {
-            if (datalist.Count <= index) return 0;
-            if (!DateTime.TryParse(datalist[index].estimatedTime2, out var abfahrt)) return 0;
+            if (datalist == null || datalist.Count <= index) return -999; // soll signal für "keine Daten" sein.
+            if (!DateTime.TryParse(datalist[index].estimatedTime2, out var abfahrt)) return -999;
 
             var loslaufen = abfahrt.AddMinutes(-6);
             var diff = (loslaufen - DateTime.Now).TotalMinutes;
 
-            return Math.Max(0, (int)Math.Ceiling(diff));
+            return (int)Math.Ceiling(diff);
         }
 
         private static string RequestCreate() => @"<?xml version=""1.0"" encoding=""UTF-8""?>

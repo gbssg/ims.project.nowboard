@@ -16,17 +16,25 @@
         <canvas id="clock" class="clock" height="400" width="400"></canvas>
     </div>
 
-    @if (datalist.Count == 0)
+    @{
+        var countdown = GetLoslaufenCountdown(0);
+    }
+
+    @if (datalist.Count == 0 || countdown == -999)
     {
         <span>Keine Abfahrten gefunden.</span>
     }
-    else if (GetLoslaufenCountdown(0) == 0) // Nur wenn
+    else if (countdown > 0)
+    {
+        <p class="loslaufen">Loslaufen in @countdown min</p>
+    }
+    else if (countdown <= 0 && countdown >= -1)
     {
         <p class="loslaufen">Jetzt loslaufen!</p>
     }
     else
     {
-        <p class="loslaufen">Loslaufen in @GetLoslaufenCountdown(1) min</p>
+        <p class="loslaufen" style="color: gray;">Abfahrt erfolgt...</p>
     }
 
     <table class="table">
