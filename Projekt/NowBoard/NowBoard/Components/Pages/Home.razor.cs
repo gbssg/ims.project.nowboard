@@ -110,13 +110,25 @@ namespace NowBoard.Components.Pages
 
         private int GetLoslaufenCountdown(int index)
         {
-            if (datalist == null || datalist.Count <= index) return -999; // soll signal für "keine Daten" sein.
-            if (!DateTime.TryParse(datalist[index].estimatedTime2, out var abfahrt)) return -999;
+            // falls liste leer ist
+            if (datalist == null || datalist.Count <= index) return -999;
 
-            var loslaufen = abfahrt.AddMinutes(-6);
-            var diff = (loslaufen - DateTime.Now).TotalMinutes;
+            // suchen nach ersten bus der noch nicht abgefahren ist
+            for (int i = index; i < datalist.Count; i++)
+            {
+                if (DateTime.TryParse(datalist[i].estimatedTime2, out var abfahrt))
+                {
+                    var loslaufen = abfahrt.AddMinutes(-6);
+                    var diff = (loslaufen - DateTime.Now).TotalMinutes;
+                    int countdown = (int)Math.Ceiling(diff);
 
-            return (int)Math.Ceiling(diff);
+                    if (countdown >= -1)
+                    {
+                        return countdown;
+                    }
+                }
+            }
+            return -999;
         }
 
         private static string RequestCreate() => @"<?xml version=""1.0"" encoding=""UTF-8""?>
