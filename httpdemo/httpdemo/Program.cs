@@ -33,7 +33,7 @@ namespace httpdemo
         {
             using var client = new HttpClient();
             client.BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6ImMwZDY2ZGI2NmQ3NDQ4ZjM4ODMxMDg5MTM1MWNmY2UwIiwiaCI6Im11cm11cjEyOCJ9");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "eyJvcmciOiI2NDA2NTFhNTIyZmEwNTAwMDEyOWJiZTEiLCJpZCI6IjQ4MGVlMzRiYjgxNjRjYTNiNGNiYTAyZmJiNzU5ZGVkIiwiaCI6Im11cm11cjEyOCJ9");
 
             var requestData = RequestCreate();
             var request = new StringContent(requestData, Encoding.UTF8, "application/xml");
@@ -76,7 +76,7 @@ namespace httpdemo
                 .ToList(); // Abfahrten sortieren nach Zeit
 
             Console.WriteLine(" Haltestelle\t\t\tLinie\t\tAbfahrt\t\tVerspätung");
-            Console.WriteLine("-------------------------------------------------------------------------");
+            Console.WriteLine("---------------------------------------------------------------------------");
 
             foreach (var departure in sortedDepartures)
             {

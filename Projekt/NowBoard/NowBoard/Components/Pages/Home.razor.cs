@@ -33,19 +33,21 @@ namespace NowBoard.Components.Pages
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            // Initialisiert die Uhr via JavaScript nach dem ersten Rendern
             if (firstRender)
                 await JS.InvokeVoidAsync("drawClock");
         }
 
         public void Dispose() => refreshTimer?.Dispose();
 
+        
         private async Task DisplayDepartures()
         {
             using var client = new HttpClient
             {
                 BaseAddress = new Uri("https://api.opentransportdata.swiss/ojp20")
             };
-
+            // Authentifizierung für die API
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                 "Bearer", OtdSetup.AuthToken
             );
@@ -54,6 +56,7 @@ namespace NowBoard.Components.Pages
             var response = await client.PostAsync("", request);
             var responseXML = await response.Content.ReadAsStringAsync();
 
+            // XML-Deserialisierung in das OJP-Datenmodell
             var serializer = new XmlSerializer(typeof(Ojp));
             if (serializer.Deserialize(new StringReader(responseXML)) is not Ojp responseOjp)
                 return;
@@ -86,12 +89,13 @@ namespace NowBoard.Components.Pages
                         TimetabledTime = scheduled,
                         EstimatedTime = estimated,
                         Line = line,
-                        Hinweis = estimated - scheduled,
+                        Hinweis = estimated - scheduled, // Berechnet Verspätung
                         Station = stopName
                     });
                 }
             }
 
+            // Filtern auf relevante Linien und nur die nächsten 5 Abfahrten nehmen
             datalist = allDepartures
                 .Where(d => d.Line is "5" or "S21" or "S22")
                 .OrderBy(d => d.TimetabledTime)
@@ -103,6 +107,7 @@ namespace NowBoard.Components.Pages
                     estimatedTime = d.EstimatedTime.ToString("t"),
                     estimatedTime2 = d.EstimatedTime.ToString("t"),
                     linie = d.Line,
+                    // Zeigt Verspätung in Minuten an, falls diese > 0 ist
                     hinweis = d.Hinweis.TotalMinutes < 0.9 ? string.Empty : $"{(int)Math.Round(d.Hinweis.TotalMinutes)}'"
                 })
                 .ToList();
