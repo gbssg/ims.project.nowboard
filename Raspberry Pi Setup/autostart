@@ -1,0 +1,8 @@
+cd /bin/NowBoard
+ASPNETCORE_ENVIRONMENT=Development ./NowBoard &
+
+sleep 10
+
+chromium http://localhost:5000/ --kiosk --noerrdialogs --start-maximized --nofirst-run --disable-infobars --hide-scrollbars &
+
+/home/USER/refresh_kiosk.sh &
