@@ -28,6 +28,15 @@ NowBoard is a web application that displays live public transport departures for
 3. Run the project:
 `dotnet run`
 
+## Included Examples
+**httpdemo** is a console application used for testing and development.  
+It implements the API request and core logic, and outputs departure data in the console.
+
+## Additional Resources
+**Raspberry Pi Setup** contains configuration files for deployment on a Raspberry Pi:  
+  - autostart file  
+  - refresh script  
+
 ## Notes
 Requires internet connection  
 API access from opentransportdata.swiss
