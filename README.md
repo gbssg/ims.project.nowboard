@@ -29,5 +29,5 @@ NowBoard is a web application that displays live public transport departures for
 `dotnet run`
 
 ## Notes
-Requires internet connection
+Requires internet connection  
 API access from opentransportdata.swiss
